@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Honza3D | Ultimate Empire (Fixed)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            font-family: 'Rajdhani', sans-serif;
+            touch-action: manipulation;
+        }
+        h1, .font-money { font-family: 'Orbitron', sans-serif; }
+        
+        @keyframes fall {
+            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
+            10% { opacity: 1; }
+            90% { opacity: 1; }
+            100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
+        }
+        .falling-item {
+            position: fixed; top: 0; pointer-events: none; z-index: 100;
+            animation: fall 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+            filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5));
+        }
+
+        .printer-btn {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(249, 115, 22, 0.2);
+            border: 2px solid rgba(249, 115, 22, 0.3);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .printer-btn:active { transform: scale(0.85); }
+
+        .upgrade-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(4px);
+            border: 1px solid rgba(255,255,255,0.05);
+            transition: all 0.15s ease;
+        }
+
+        .rebirth-ready {
+            animation: neonPulse 1.5s infinite alternate;
+            background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%) !important;
+            color: white !important; opacity: 1 !important; cursor: pointer !important;
+        }
+        @keyframes neonPulse {
+            from { box-shadow: 0 0 10px #a855f7; }
+            to { box-shadow: 0 0 25px #d8b4fe; }
+        }
+
+        /* Scrollbar fix */
+        #upgrade-list::-webkit-scrollbar { width: 4px; }
+        #upgrade-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
+
+        @media (max-width: 768px) {
+            .main-layout { flex-direction: column; }
+            .side-menu { width: 100%; height: 50vh; border-l: 0; border-top: 1px solid rgba(255,255,255,0.1); }
+            .hero-section { height: 50vh; padding: 1rem; }
+            .text-8xl { font-size: 3.5rem; }
+            .printer-btn { width: 120px; height: 120px; }
+            .printer-btn span { font-size: 60px; }
+        }
+    </style>
+</head>
+<body class="text-slate-200 select-none overflow-hidden h-screen w-screen">
+
+    <div class="flex h-full main-layout">
+        <div class="flex-grow flex flex-col items-center justify-center relative p-6 hero-section">
+            <div class="absolute top-6 left-6 flex flex-col gap-1">
+                <div id="rebirth-badge" class="text-lg font-black text-purple-400 drop-shadow-md">1.0x MULTIPLIER</div>
+                <div id="save-status" class="text-[10px] text-green-500 font-bold opacity-0 transition-opacity uppercase">Uloženo</div>
+            </div>
+
+            <h1 class="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-8">HONZA3D</h1>
+
+            <button onclick="handlePrint(event)" class="printer-btn w-48 h-48 md:w-64 md:h-64 rounded-3xl flex items-center justify-center mb-8">
+                <span class="text-7xl md:text-9xl">🖨️</span>
+            </button>
+
+            <div class="text-center space-y-4">
+                <div class="text-5xl md:text-7xl font-black font-money text-white break-all" id="money">0 Kč</div>
+                <div class="flex gap-4 bg-black/30 p-4 rounded-xl border border-white/5">
+                    <div class="text-blue-400 font-bold text-sm md:text-base" id="speed">0 Kč/s</div>
+                    <div class="text-orange-400 font-bold text-sm md:text-base" id="power">1 Kč/klik</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full md:w-[400px] bg-slate-900/80 backdrop-blur-2xl p-6 flex flex-col shadow-2xl z-50 side-menu">
+            <h2 class="text-xl font-black text-white uppercase mb-4 border-b border-white/10 pb-2">Vybavení</h2>
+            
+            <div id="upgrade-list" class="flex-grow overflow-y-auto space-y-3 pr-2 mb-4">
+                </div>
+            
+            <div class="space-y-3">
+                <div class="bg-black/20 p-3 rounded-lg">
+                    <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
+                        <span>Rebirth Progress</span>
+                        <span id="progress-percent">0%</span>
+                    </div>
+                    <div class="h-1.5 bg-black/40 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
+                    </div>
+                </div>
+                <button onclick="doRebirth()" id="rebirth-btn" class="w-full bg-slate-800 text-slate-500 p-4 rounded-xl font-black transition-all opacity-50 cursor-not-allowed uppercase text-sm">
+                    Rebirth (+0.2x)
+                    <div class="text-[10px] font-normal" id="rebirth-price-tag">Cena: 100B Kč</div>
+                </button>
+                <button onclick="resetGame()" class="w-full text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest">Smazat Save</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const REBIRTH_PRICE = 100000000000; 
+        let money = 0;
+        let multiplier = 1.0;
+        let clickPower = 1;
+        let incomePerSecond = 0;
+
+        const manualCosts = ['15', '100', '1k', '5k', '25k', '100k', '500k', '2m', '10m', '50m', '250m', '1b', '5b', '25b', '100b', '500b', '2t', '10t', '50t', '250t', '1q', '5q', '25q', '100q', '500q', '2s', '10s', '50s', '250s', '1n', '5n', '25n', '100n', '500n', '2d', '10d', '50d', '250d', '1u', '5u', '25u', '100u', '500u', '1v', '10v', '100v', '1g', '10g', '100g', '1000g'];
+        const upgradeNames = ["Starý Ender", "Tryska 0.4mm", "Lepidlo", "Ocel tryska", "Bambu Lab", "Safír hrot", "Plech Průša", "Titan Heatbreak", "Resin bazén", "Laser měření", "Panelák farma", "Vulkan tryska", "Al extrudér", "Diamant hrot", "Voron", "Voda chlazení", "Hala Brno", "Ultra tryska", "Robot rám", "Karbid tryska", "Křemík pec", "Plazma extr.", "Cloud server", "Nukleární teplo", "USA pobočka", "Molekul tryska", "Nano linka", "Antihmota", "Měsíční těžba", "Gravit měnič", "Mars Kolonie", "Časová smyčka", "Orbital stanice", "Kvant extr.", "Saturn prstence", "Neutron tryska", "Mezigalaktik", "Temná hmota", "Dyson sféra", "Hologram", "Vládce soustavy", "Singularita", "Tkadlec", "Bůh tryska", "Honza3D Bůh", "Nekonečno", "Konec vesmíru", "Nová dimenze", "Matrix", "Master Model"];
+        const suffixes = ["", "k", "M", "B", "T", "Q", "S", "N", "D", "U", "V", "G"];
+
+        const upgrades = upgradeNames.map((name, i) => ({
+            id: i, name, cost: parseShortNumber(manualCosts[i]), value: parseShortNumber(manualCosts[i]) / 8,
+            type: i % 2 !== 0 ? 'click' : 'auto', icon: i % 2 !== 0 ? "⚡" : "📦", count: 0
+        }));
+
+        function parseShortNumber(val) {
+            val = val.toLowerCase(); const num = parseFloat(val);
+            if (val.includes('k')) return num * 1e3; if (val.includes('m')) return num * 1e6;
+            if (val.includes('b')) return num * 1e9; if (val.includes('t')) return num * 1e12;
+            if (val.includes('q')) return num * 1e15; if (val.includes('s')) return num * 1e18;
+            if (val.includes('n')) return num * 1e21; if (val.includes('d')) return num * 1e24;
+            if (val.includes('u')) return num * 1e27; if (val.includes('v')) return num * 1e30;
+            if (val.includes('g')) return num * 1e33; return num;
+        }
+
+        function formatMoney(num) {
+            if (num < 1000) return Math.floor(num) + " Kč";
+            const exp = Math.floor(Math.log10(num) / 3);
+            return (num / Math.pow(1000, exp)).toLocaleString('cs-CZ', {maximumFractionDigits: 1}) + " " + (suffixes[exp] || "e"+exp*3);
+        }
+
+        function renderList() {
+            const list = document.getElementById('upgrade-list');
+            list.innerHTML = upgrades.map((u, i) => `
+                <div id="upg-${i}" onclick="buyUpgrade(${i})" class="upgrade-card p-4 rounded-xl flex justify-between items-center cursor-pointer border-l-4 border-transparent">
+                    <div class="flex items-center gap-3">
+                        <div class="text-xl">${u.icon}</div>
+                        <div>
+                            <div class="font-bold text-white text-xs">${u.name}</div>
+                            <div class="text-[9px] font-bold ${u.type === 'click' ? 'text-orange-500' : 'text-blue-500'}">+${formatMoney(u.value)}</div>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <div class="font-black text-white text-xs">${formatMoney(u.cost)}</div>
+                        <div class="text-[9px] text-slate-500 font-bold" id="upg-count-${i}">MÁŠ ${u.count}</div>
+                    </div>
+                </div>`).join('');
+        }
+
+        function saveGame() {
+            const data = { money, multiplier, counts: upgrades.map(u => u.count) };
+            localStorage.setItem('honza3D_save', JSON.stringify(data));
+            const status = document.getElementById('save-status');
+            status.style.opacity = '1'; setTimeout(() => status.style.opacity = '0', 1500);
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('honza3D_save');
+            if (saved) {
+                const data = JSON.parse(saved);
+                money = data.money || 0; multiplier = data.multiplier || 1.0;
+                incomePerSecond = 0; clickPower = 1;
+                data.counts.forEach((count, i) => {
+                    upgrades[i].count = count;
+                    if (upgrades[i].type === 'auto') incomePerSecond += count * upgrades[i].value;
+                    else clickPower += count * upgrades[i].value;
+                });
+            }
+            renderList(); // Zaručíme, že se seznam vykreslí po načtení
+            updateUI();
+        }
+
+        function buyUpgrade(idx) {
+            const u = upgrades[idx];
+            if (money >= u.cost) {
+                money -= u.cost; u.count++;
+                if(u.type === 'auto') incomePerSecond += u.value; else clickPower += u.value;
+                updateUI(); saveGame();
+            }
+        }
+
+        function handlePrint(e) {
+            money += clickPower * multiplier;
+            if (Math.random() > 0.8) spawnItem();
+            updateUI();
+        }
+
+        function doRebirth() {
+            if (money >= REBIRTH_PRICE) {
+                multiplier += 0.2; money = 0; incomePerSecond = 0; clickPower = 1;
+                upgrades.forEach(u => u.count = 0);
+                renderList(); updateUI(); saveGame();
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('money').innerText = formatMoney(money);
+            document.getElementById('speed').innerText = formatMoney(incomePerSecond * multiplier) + "/s";
+            document.getElementById('power').innerText = formatMoney(clickPower * multiplier) + "/klik";
+            document.getElementById('rebirth-badge').innerText = multiplier.toFixed(1) + "x MULTIPLIER";
+            
+            const prog = Math.min((money / REBIRTH_PRICE) * 100, 100);
+            document.getElementById('progress-bar').style.width = prog + "%";
+            document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
+
+            const rbBtn = document.getElementById('rebirth-btn');
+            if (money >= REBIRTH_PRICE) rbBtn.classList.add('rebirth-ready'); else rbBtn.classList.remove('rebirth-ready');
+
+            upgrades.forEach((u, i) => {
+                const card = document.getElementById(`upg-${i}`);
+                if (!card) return;
+                document.getElementById(`upg-count-${i}`).innerText = `MÁŠ ${u.count}`;
+                if (money >= u.cost) {
+                    card.classList.add('opacity-100'); card.classList.remove('opacity-40');
+                    card.style.borderLeftColor = u.type === 'click' ? '#f97316' : '#3b82f6';
+                } else {
+                    card.classList.remove('opacity-100'); card.classList.add('opacity-40');
+                    card.style.borderLeftColor = 'transparent';
+                }
+            });
+        }
+
+        function spawnItem() {
+            const item = document.createElement('div'); item.className = 'falling-item';
+            item.innerText = ["🚀", "🐉", "🤖", "⚔️", "🏰"][Math.floor(Math.random() * 5)];
+            item.style.left = Math.random() * 80 + 5 + "vw"; document.body.appendChild(item);
+            setTimeout(() => item.remove(), 3500);
+        }
+
+        function resetGame() { if(confirm("Smazat vše?")) { localStorage.removeItem('honza3D_save'); location.reload(); } }
+
+        setInterval(() => { if (incomePerSecond > 0) { money += (incomePerSecond * multiplier) / 10; updateUI(); } }, 100);
+        setInterval(saveGame, 10000);
+
+        // START HRY
+        loadGame();
+    </script>
+</body>
+</html>
