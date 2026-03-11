@@ -116,6 +116,28 @@
     </div>
 
     <script>
+        function toggleFullScreen() {
+    const doc = window.document;
+    const docEl = doc.documentElement;
+
+    const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+    const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
+
+    if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+        // Zapnutí FullScreenu
+        requestFullScreen.call(docEl).then(() => {
+            // Bonus pro Android: Zamkne hru na výšku (Portrait)
+            if (screen.orientation && screen.orientation.lock) {
+                screen.orientation.lock("portrait-primary").catch(err => console.log("Orientace se nezamkla: ", err));
+            }
+        }).catch(err => {
+            alert(`Chyba při zapínání: ${err.message}`);
+        });
+    } else {
+        // Vypnutí FullScreenu
+        cancelFullScreen.call(doc);
+    }
+}
         const REBIRTH_PRICE = 100000000000; 
         let money = 0;
         let multiplier = 1.0;
@@ -255,4 +277,5 @@
     </script>
 </body>
 </html>
+
 
