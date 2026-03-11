@@ -4,6 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Honza3D | Ultimate Empire</title>
+    
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Honza3D">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#020617">
+    
+    <link rel="icon" href="https://fav.farm/🖨️">
+    <link rel="apple-touch-icon" href="https://fav.farm/🖨️">
+
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
@@ -52,16 +62,15 @@
             to { box-shadow: 0 0 25px #d8b4fe; }
         }
 
-        /* Scrollbar fix */
         #upgrade-list::-webkit-scrollbar { width: 4px; }
         #upgrade-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
 
         @media (max-width: 768px) {
             .main-layout { flex-direction: column; }
-            .side-menu { width: 100%; height: 50vh; border-l: 0; border-top: 1px solid rgba(255,255,255,0.1); }
+            .side-menu { width: 100%; height: 50vh; border-left: 0; border-top: 1px solid rgba(255,255,255,0.1); }
             .hero-section { height: 50vh; padding: 1rem; }
-            .text-8xl { font-size: 3.5rem; }
-            .printer-btn { width: 120px; height: 120px; }
+            .text-5xl { font-size: 2.5rem; }
+            .printer-btn { width: 130px; height: 130px; }
             .printer-btn span { font-size: 60px; }
         }
     </style>
@@ -75,10 +84,14 @@
                 <div id="save-status" class="text-[10px] text-green-500 font-bold opacity-0 transition-opacity uppercase">Uloženo</div>
             </div>
 
-            <h1 class="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-8">HONZA3D</h1>
+            <h1 class="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-6">HONZA3D</h1>
 
-            <button onclick="handlePrint(event)" class="printer-btn w-48 h-48 md:w-64 md:h-64 rounded-3xl flex items-center justify-center mb-8">
+            <button onclick="handlePrint(event)" class="printer-btn w-48 h-48 md:w-64 md:h-64 rounded-3xl flex items-center justify-center mb-4">
                 <span class="text-7xl md:text-9xl">🖨️</span>
+            </button>
+
+            <button onclick="toggleFullScreen()" class="mb-8 text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded-full text-slate-400 hover:text-white transition-all uppercase font-bold tracking-widest">
+                Režim Celá obrazovka
             </button>
 
             <div class="text-center space-y-4">
@@ -93,8 +106,7 @@
         <div class="w-full md:w-[400px] bg-slate-900/80 backdrop-blur-2xl p-6 flex flex-col shadow-2xl z-50 side-menu">
             <h2 class="text-xl font-black text-white uppercase mb-4 border-b border-white/10 pb-2">Vybavení</h2>
             
-            <div id="upgrade-list" class="flex-grow overflow-y-auto space-y-3 pr-2 mb-4">
-                </div>
+            <div id="upgrade-list" class="flex-grow overflow-y-auto space-y-3 pr-2 mb-4"></div>
             
             <div class="space-y-3">
                 <div class="bg-black/20 p-3 rounded-lg">
@@ -107,7 +119,7 @@
                     </div>
                 </div>
                 <button onclick="doRebirth()" id="rebirth-btn" class="w-full bg-slate-800 text-slate-500 p-4 rounded-xl font-black transition-all opacity-50 cursor-not-allowed uppercase text-sm">
-                    Rebirth (+0.2x)
+                    Rebirth (+1.0x)
                     <div class="text-[10px] font-normal" id="rebirth-price-tag">Cena: 100B Kč</div>
                 </button>
                 <button onclick="resetGame()" class="w-full text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest">Smazat Save</button>
@@ -116,28 +128,24 @@
     </div>
 
     <script>
+        // FULLSCREEN FUNKCE
         function toggleFullScreen() {
-    const doc = window.document;
-    const docEl = doc.documentElement;
+            const doc = window.document;
+            const docEl = doc.documentElement;
+            const requestFS = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
+            const exitFS = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
 
-    const requestFullScreen = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-    const cancelFullScreen = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
-
-    if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-        // Zapnutí FullScreenu
-        requestFullScreen.call(docEl).then(() => {
-            // Bonus pro Android: Zamkne hru na výšku (Portrait)
-            if (screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock("portrait-primary").catch(err => console.log("Orientace se nezamkla: ", err));
+            if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
+                requestFS.call(docEl).then(() => {
+                    if (screen.orientation && screen.orientation.lock) {
+                        screen.orientation.lock("portrait-primary").catch(e => {});
+                    }
+                }).catch(err => {});
+            } else {
+                exitFS.call(doc);
             }
-        }).catch(err => {
-            alert(`Chyba při zapínání: ${err.message}`);
-        });
-    } else {
-        // Vypnutí FullScreenu
-        cancelFullScreen.call(doc);
-    }
-}
+        }
+
         const REBIRTH_PRICE = 100000000000; 
         let money = 0;
         let multiplier = 1.0;
@@ -182,7 +190,7 @@
                     </div>
                     <div class="text-right">
                         <div class="font-black text-white text-xs">${formatMoney(u.cost)}</div>
-                        <div class="text-[9px] text-slate-500 font-bold" id="upg-count-${i}">MÁŠ ${u.count}</div>
+                        <div class="text-[9px] text-slate-500 font-bold" id="upg-count-${i}">MÁŠ ${u.count}x</div>
                     </div>
                 </div>`).join('');
         }
@@ -206,7 +214,7 @@
                     else clickPower += count * upgrades[i].value;
                 });
             }
-            renderList(); // Zaručíme, že se seznam vykreslí po načtení
+            renderList();
             updateUI();
         }
 
@@ -221,13 +229,15 @@
 
         function handlePrint(e) {
             money += clickPower * multiplier;
+            // Vibrace pro Android
+            if (navigator.vibrate) navigator.vibrate(15);
             if (Math.random() > 0.8) spawnItem();
             updateUI();
         }
 
         function doRebirth() {
             if (money >= REBIRTH_PRICE) {
-                multiplier += 0.2; money = 0; incomePerSecond = 0; clickPower = 1;
+                multiplier += 1; money = 0; incomePerSecond = 0; clickPower = 3;
                 upgrades.forEach(u => u.count = 0);
                 renderList(); updateUI(); saveGame();
             }
@@ -238,18 +248,15 @@
             document.getElementById('speed').innerText = formatMoney(incomePerSecond * multiplier) + "/s";
             document.getElementById('power').innerText = formatMoney(clickPower * multiplier) + "/klik";
             document.getElementById('rebirth-badge').innerText = multiplier.toFixed(1) + "x MULTIPLIER";
-            
             const prog = Math.min((money / REBIRTH_PRICE) * 100, 100);
             document.getElementById('progress-bar').style.width = prog + "%";
             document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
-
             const rbBtn = document.getElementById('rebirth-btn');
             if (money >= REBIRTH_PRICE) rbBtn.classList.add('rebirth-ready'); else rbBtn.classList.remove('rebirth-ready');
-
             upgrades.forEach((u, i) => {
                 const card = document.getElementById(`upg-${i}`);
                 if (!card) return;
-                document.getElementById(`upg-count-${i}`).innerText = `MÁŠ ${u.count}`;
+                document.getElementById(`upg-count-${i}`).innerText = `MÁŠ ${u.count}x`;
                 if (money >= u.cost) {
                     card.classList.add('opacity-100'); card.classList.remove('opacity-40');
                     card.style.borderLeftColor = u.type === 'click' ? '#f97316' : '#3b82f6';
@@ -272,10 +279,7 @@
         setInterval(() => { if (incomePerSecond > 0) { money += (incomePerSecond * multiplier) / 10; updateUI(); } }, 100);
         setInterval(saveGame, 10000);
 
-        // START HRY
         loadGame();
     </script>
 </body>
 </html>
-
-
