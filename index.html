@@ -128,7 +128,6 @@
     </div>
 
     <script>
-        // FULLSCREEN FUNKCE
         function toggleFullScreen() {
             const doc = window.document;
             const docEl = doc.documentElement;
@@ -146,7 +145,8 @@
             }
         }
 
-        const REBIRTH_PRICE = 100000000000; 
+        // --- HERNÍ LOGIKA ---
+        let rebirthPrice = 100000000000; // Základní cena 100B
         let money = 0;
         let multiplier = 1.0;
         let clickPower = 1;
@@ -196,7 +196,12 @@
         }
 
         function saveGame() {
-            const data = { money, multiplier, counts: upgrades.map(u => u.count) };
+            const data = { 
+                money, 
+                multiplier, 
+                rebirthPrice, // Ukládáme i aktuální cenu Rebirthu
+                counts: upgrades.map(u => u.count) 
+            };
             localStorage.setItem('honza3D_save', JSON.stringify(data));
             const status = document.getElementById('save-status');
             status.style.opacity = '1'; setTimeout(() => status.style.opacity = '0', 1500);
@@ -206,7 +211,9 @@
             const saved = localStorage.getItem('honza3D_save');
             if (saved) {
                 const data = JSON.parse(saved);
-                money = data.money || 0; multiplier = data.multiplier || 1.0;
+                money = data.money || 0; 
+                multiplier = data.multiplier || 1.0;
+                rebirthPrice = data.rebirthPrice || 100000000000; // Načteme cenu
                 incomePerSecond = 0; clickPower = 1;
                 data.counts.forEach((count, i) => {
                     upgrades[i].count = count;
@@ -229,17 +236,25 @@
 
         function handlePrint(e) {
             money += clickPower * multiplier;
-            // Vibrace pro Android
             if (navigator.vibrate) navigator.vibrate(15);
             if (Math.random() > 0.8) spawnItem();
             updateUI();
         }
 
         function doRebirth() {
-            if (money >= REBIRTH_PRICE) {
-                multiplier += 1; money = 0; incomePerSecond = 0; clickPower = 3;
+            if (money >= rebirthPrice) {
+                multiplier += 1.0; 
+                money = 0; 
+                incomePerSecond = 0; 
+                clickPower = 1;
+                
+                // ZDRAŽENÍ 5x
+                rebirthPrice *= 5; 
+
                 upgrades.forEach(u => u.count = 0);
-                renderList(); updateUI(); saveGame();
+                renderList(); 
+                updateUI(); 
+                saveGame();
             }
         }
 
@@ -248,11 +263,15 @@
             document.getElementById('speed').innerText = formatMoney(incomePerSecond * multiplier) + "/s";
             document.getElementById('power').innerText = formatMoney(clickPower * multiplier) + "/klik";
             document.getElementById('rebirth-badge').innerText = multiplier.toFixed(1) + "x MULTIPLIER";
-            const prog = Math.min((money / REBIRTH_PRICE) * 100, 100);
+            document.getElementById('rebirth-price-tag').innerText = "Cena: " + formatMoney(rebirthPrice);
+
+            const prog = Math.min((money / rebirthPrice) * 100, 100);
             document.getElementById('progress-bar').style.width = prog + "%";
             document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
+
             const rbBtn = document.getElementById('rebirth-btn');
-            if (money >= REBIRTH_PRICE) rbBtn.classList.add('rebirth-ready'); else rbBtn.classList.remove('rebirth-ready');
+            if (money >= rebirthPrice) rbBtn.classList.add('rebirth-ready'); else rbBtn.classList.remove('rebirth-ready');
+
             upgrades.forEach((u, i) => {
                 const card = document.getElementById(`upg-${i}`);
                 if (!card) return;
