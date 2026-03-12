@@ -4,162 +4,79 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Honza3D | Ultimate Empire</title>
-    
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Honza3D">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="theme-color" content="#020617">
-    
-    <link rel="icon" href="https://fav.farm/🖨️">
-    <link rel="apple-touch-icon" href="https://fav.farm/🖨️">
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
-            font-family: 'Rajdhani', sans-serif;
-            touch-action: manipulation;
-        }
+        body { background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); font-family: 'Rajdhani', sans-serif; touch-action: manipulation; }
         h1, .font-money { font-family: 'Orbitron', sans-serif; }
-        
-        @keyframes fall {
-            0% { transform: translateY(-100px) rotate(0deg); opacity: 0; }
-            10% { opacity: 1; }
-            90% { opacity: 1; }
-            100% { transform: translateY(110vh) rotate(540deg); opacity: 0; }
-        }
-        .falling-item {
-            position: fixed; top: 0; pointer-events: none; z-index: 100;
-            animation: fall 3.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-            filter: drop-shadow(0 0 10px rgba(249, 115, 22, 0.5));
-        }
-
-        .printer-btn {
-            background: rgba(30, 41, 59, 0.7);
-            backdrop-filter: blur(10px);
-            box-shadow: 0 0 40px rgba(0,0,0,0.5), inset 0 0 20px rgba(249, 115, 22, 0.2);
-            border: 2px solid rgba(249, 115, 22, 0.3);
-            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
+        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index: 1000; }
+        .printer-btn { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 2px solid rgba(249, 115, 22, 0.3); box-shadow: 0 0 30px rgba(249, 115, 22, 0.1); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
         .printer-btn:active { transform: scale(0.85); }
-
-        .upgrade-card {
-            background: rgba(15, 23, 42, 0.6);
-            backdrop-filter: blur(4px);
-            border: 1px solid rgba(255,255,255,0.05);
-            transition: all 0.15s ease;
-        }
-
-        .rebirth-ready {
-            animation: neonPulse 1.5s infinite alternate;
-            background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%) !important;
-            color: white !important; opacity: 1 !important; cursor: pointer !important;
-        }
-        @keyframes neonPulse {
-            from { box-shadow: 0 0 10px #a855f7; }
-            to { box-shadow: 0 0 25px #d8b4fe; }
-        }
-
+        .upgrade-card { background: rgba(15, 23, 42, 0.6); border-left: 4px solid transparent; transition: all 0.2s ease; }
+        .upgrade-click { border-left-color: #f97316; box-shadow: inset 5px 0 15px rgba(249, 115, 22, 0.1); }
+        .upgrade-auto { border-left-color: #3b82f6; box-shadow: inset 5px 0 15px rgba(59, 130, 246, 0.1); }
+        .tab-active { border-bottom: 3px solid #f97316; color: white; }
         #upgrade-list::-webkit-scrollbar { width: 4px; }
         #upgrade-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-
-        @media (max-width: 768px) {
-            .main-layout { flex-direction: column; }
-            .side-menu { width: 100%; height: 50vh; border-left: 0; border-top: 1px solid rgba(255,255,255,0.1); }
-            .hero-section { height: 50vh; padding: 1rem; }
-            .text-5xl { font-size: 2.5rem; }
-            .printer-btn { width: 130px; height: 130px; }
-            .printer-btn span { font-size: 60px; }
-        }
+        .rebirth-ready { animation: neonPulse 1.5s infinite alternate; background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%) !important; color: white !important; opacity: 1 !important; }
+        @keyframes neonPulse { from { box-shadow: 0 0 10px #a855f7; } to { box-shadow: 0 0 25px #d8b4fe; } }
     </style>
 </head>
-<body class="text-slate-200 select-none overflow-hidden h-screen w-screen">
+<body class="text-slate-200 select-none overflow-hidden h-screen w-screen text-sm">
 
-    <div class="flex h-full main-layout">
-        <div class="flex-grow flex flex-col items-center justify-center relative p-6 hero-section">
-            <div class="absolute top-6 left-6 flex flex-col gap-1">
-                <div id="rebirth-badge" class="text-lg font-black text-purple-400 drop-shadow-md">1.0x MULTIPLIER</div>
-                <div id="save-status" class="text-[10px] text-green-500 font-bold opacity-0 transition-opacity uppercase">Uloženo</div>
+    <div id="leaderboard-modal" class="modal items-center justify-center p-4">
+        <div class="bg-slate-900 border border-orange-500/30 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeLeaderboard()" class="absolute top-4 right-4 text-slate-500 hover:text-white text-2xl">✕</button>
+            <h2 class="text-xl font-black text-orange-500 italic uppercase mb-4 text-center tracking-widest">Honza3D | Ultimate Empire SÍŤ</h2>
+            <div class="flex border-b border-white/10 mb-4 text-slate-400 font-bold uppercase text-[10px] tracking-widest">
+                <button id="tab-pc" onclick="switchTab('PC')" class="flex-1 py-3 tab-active">💻 PC Top 10</button>
+                <button id="tab-mobile" onclick="switchTab('Mobil')" class="flex-1 py-3">📱 Mobil Top 10</button>
             </div>
+            <div id="leaderboard-content" class="space-y-2 max-h-[50vh] overflow-y-auto pr-2 text-xs"></div>
+        </div>
+    </div>
 
-            <h1 class="text-5xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-6">HONZA3D</h1>
-
-            <button onclick="handlePrint(event)" class="printer-btn w-48 h-48 md:w-64 md:h-64 rounded-3xl flex items-center justify-center mb-4">
-                <span class="text-7xl md:text-9xl">🖨️</span>
-            </button>
-
-            <button onclick="toggleFullScreen()" class="mb-8 text-[10px] bg-white/5 border border-white/10 px-3 py-1 rounded-full text-slate-400 hover:text-white transition-all uppercase font-bold tracking-widest">
-                Režim Celá obrazovka
-            </button>
-
+    <div class="flex h-full flex-col md:flex-row">
+        <div class="flex-grow flex flex-col items-center justify-center relative p-6">
+            <div class="absolute top-6 left-6 flex flex-col gap-1">
+                <div id="rebirth-badge" class="text-lg font-black text-purple-400 font-money">1.0x MULTIPLIER</div>
+                <div id="player-name-display" class="text-[10px] text-orange-400 font-bold uppercase tracking-widest italic">Hráč: ---</div>
+                <div id="sync-status-text" class="text-[9px] text-green-500 uppercase font-bold tracking-widest">● Live Sync</div>
+            </div>
+            <button onclick="openLeaderboard()" class="absolute top-6 right-6 bg-orange-600 px-4 py-2 rounded-full font-black text-[10px] uppercase shadow-lg hover:bg-orange-500">🏆 Žebříček 🏆</button>
+            <h1 class="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-6">Honza3D</h1>
+            <button onclick="handlePrint(event)" class="printer-btn w-48 h-48 md:w-64 md:h-64 rounded-3xl flex items-center justify-center mb-6"><span class="text-7xl md:text-9xl">🖨️</span></button>
             <div class="text-center space-y-4">
                 <div class="text-5xl md:text-7xl font-black font-money text-white break-all" id="money">0 Kč</div>
-                <div class="flex gap-4 bg-black/30 p-4 rounded-xl border border-white/5">
-                    <div class="text-blue-400 font-bold text-sm md:text-base" id="speed">0 Kč/s</div>
-                    <div class="text-orange-400 font-bold text-sm md:text-base" id="power">1 Kč/klik</div>
+                <div class="flex gap-4 bg-black/30 p-3 rounded-xl border border-white/5 justify-center">
+                    <div class="text-blue-400 font-bold text-xs md:text-base" id="speed">0 Kč/s</div>
+                    <div class="text-orange-400 font-bold text-xs md:text-base" id="power">1 Kč/klik</div>
                 </div>
             </div>
         </div>
 
-        <div class="w-full md:w-[400px] bg-slate-900/80 backdrop-blur-2xl p-6 flex flex-col shadow-2xl z-50 side-menu">
-            <h2 class="text-xl font-black text-white uppercase mb-4 border-b border-white/10 pb-2">Vybavení</h2>
-            
-            <div id="upgrade-list" class="flex-grow overflow-y-auto space-y-3 pr-2 mb-4"></div>
-            
+        <div class="w-full md:w-[400px] bg-slate-900/90 p-6 flex flex-col border-t md:border-t-0 md:border-l border-white/10 shadow-2xl backdrop-blur-xl">
+            <h2 class="text-xl font-black mb-4 uppercase italic border-b border-white/5 pb-2 text-orange-500">Vybavení (50)</h2>
+            <div id="upgrade-list" class="flex-grow overflow-y-auto space-y-2 mb-4 pr-2"></div>
             <div class="space-y-3">
                 <div class="bg-black/20 p-3 rounded-lg">
-                    <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
-                        <span>Rebirth Progress</span>
-                        <span id="progress-percent">0%</span>
-                    </div>
-                    <div class="h-1.5 bg-black/40 rounded-full overflow-hidden">
-                        <div id="progress-bar" class="h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
-                    </div>
+                    <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1"><span>Rebirth Progress</span><span id="progress-percent">0%</span></div>
+                    <div class="h-1.5 bg-black/40 rounded-full overflow-hidden"><div id="progress-bar" class="h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div></div>
                 </div>
-                <button onclick="doRebirth()" id="rebirth-btn" class="w-full bg-slate-800 text-slate-500 p-4 rounded-xl font-black transition-all opacity-50 cursor-not-allowed uppercase text-sm">
-                    Rebirth (+1.0x)
-                    <div class="text-[10px] font-normal" id="rebirth-price-tag">Cena: 100B Kč</div>
-                </button>
-                <button onclick="resetGame()" class="w-full text-[10px] text-red-500/50 hover:text-red-500 font-bold uppercase tracking-widest">Smazat Save</button>
+                <button onclick="doRebirth()" id="rebirth-btn" class="w-full bg-slate-800 p-4 rounded-xl font-black opacity-50 uppercase text-sm transition-all text-slate-500">Rebirth (+1.0x)<div class="text-[10px] font-normal" id="rebirth-price-tag">Cena: 100B Kč</div></button>
             </div>
         </div>
     </div>
 
     <script>
-        function toggleFullScreen() {
-            const doc = window.document;
-            const docEl = doc.documentElement;
-            const requestFS = docEl.requestFullscreen || docEl.mozRequestFullScreen || docEl.webkitRequestFullScreen || docEl.msRequestFullscreen;
-            const exitFS = doc.exitFullscreen || doc.mozCancelFullScreen || doc.webkitExitFullscreen || doc.msExitFullscreen;
-
-            if (!doc.fullscreenElement && !doc.mozFullScreenElement && !doc.webkitFullscreenElement && !doc.msFullscreenElement) {
-                requestFS.call(docEl).then(() => {
-                    if (screen.orientation && screen.orientation.lock) {
-                        screen.orientation.lock("portrait-primary").catch(e => {});
-                    }
-                }).catch(err => {});
-            } else {
-                exitFS.call(doc);
-            }
-        }
-
-        // --- HERNÍ LOGIKA ---
-        let rebirthPrice = 100000000000; // Základní cena 100B
-        let money = 0;
-        let multiplier = 1.0;
-        let clickPower = 1;
-        let incomePerSecond = 0;
+        const SERVER_URL = "https://api.npoint.io/422b28f90cc9fc44342d"; 
+        
+        let money = 0, multiplier = 1.0, rebirthPrice = 100000000000, clickPower = 1, incomePerSecond = 0, currentTab = "PC";
+        const deviceType = /Mobi|Android|iPhone/i.test(navigator.userAgent) ? "Mobil" : "PC";
 
         const manualCosts = ['15', '100', '1k', '5k', '25k', '100k', '500k', '2m', '10m', '50m', '250m', '1b', '5b', '25b', '100b', '500b', '2t', '10t', '50t', '250t', '1q', '5q', '25q', '100q', '500q', '2s', '10s', '50s', '250s', '1n', '5n', '25n', '100n', '500n', '2d', '10d', '50d', '250d', '1u', '5u', '25u', '100u', '500u', '1v', '10v', '100v', '1g', '10g', '100g', '1000g'];
-        const upgradeNames = ["Starý Ender", "Tryska 0.4mm", "Lepidlo", "Ocel tryska", "Bambu Lab", "Safír hrot", "Plech Průša", "Titan Heatbreak", "Resin bazén", "Laser měření", "Panelák farma", "Vulkan tryska", "Al extrudér", "Diamant hrot", "Voron", "Voda chlazení", "Hala Brno", "Ultra tryska", "Robot rám", "Karbid tryska", "Křemík pec", "Plazma extr.", "Cloud server", "Nukleární teplo", "USA pobočka", "Molekul tryska", "Nano linka", "Antihmota", "Měsíční těžba", "Gravit měnič", "Mars Kolonie", "Časová smyčka", "Orbital stanice", "Kvant extr.", "Saturn prstence", "Neutron tryska", "Mezigalaktik", "Temná hmota", "Dyson sféra", "Hologram", "Vládce soustavy", "Singularita", "Tkadlec", "Bůh tryska", "Honza3D Bůh", "Nekonečno", "Konec vesmíru", "Nová dimenze", "Matrix", "Master Model"];
+        const upgradeNames = ["Starý Ender", "Tryska 0.4mm", "Lepidlo", "Ocel tryska", "Bambu Lab", "Safír hrot", "Plech Průša", "Titan Heatbreak", "Resin bazén", "Laser měření", "Panelák farma", "Vulkan tryska", "Al extrudér", "Diamant hrot", "Voron", "Voda chlazení", "Hala Brno", "Ultra tryska", "Robot rám", "Karbid tryska", "Křemík pec", "Plazma extr.", "Cloud server", "Nukleární teplo", "USA pobočka", "Molekul tryska", "Nano linka", "Antihmota", "Měsíční těžba", "Gravit měnič", "Mars Kolonie", "Časová smyčka", "Orbital stanice", "Kvant extr.", "Saturn prstence", "Neutron tryska", "Mezigalaktik", "Temná hmota", "Dyson sféra", "Hologram", "Vládce soustavy", "Singularita", "Tkadlec", "Bůh tryska", "Honza3D Bůh", "Nekonečno", "Konec vesmíru", "Nová dimenze", "Matrix", "Tloušťka Tvojí Mámy"];
         const suffixes = ["", "k", "M", "B", "T", "Q", "S", "N", "D", "U", "V", "G"];
-
-        const upgrades = upgradeNames.map((name, i) => ({
-            id: i, name, cost: parseShortNumber(manualCosts[i]), value: parseShortNumber(manualCosts[i]) / 8,
-            type: i % 2 !== 0 ? 'click' : 'auto', icon: i % 2 !== 0 ? "⚡" : "📦", count: 0
-        }));
 
         function parseShortNumber(val) {
             val = val.toLowerCase(); const num = parseFloat(val);
@@ -171,132 +88,111 @@
             if (val.includes('g')) return num * 1e33; return num;
         }
 
+        const upgrades = upgradeNames.map((name, i) => ({
+            id: i, name, cost: parseShortNumber(manualCosts[i]), value: parseShortNumber(manualCosts[i]) / 8,
+            type: i % 2 !== 0 ? 'click' : 'auto', icon: i % 2 !== 0 ? "⚡" : "📦", count: 0
+        }));
+
         function formatMoney(num) {
             if (num < 1000) return Math.floor(num) + " Kč";
             const exp = Math.floor(Math.log10(num) / 3);
             return (num / Math.pow(1000, exp)).toLocaleString('cs-CZ', {maximumFractionDigits: 1}) + " " + (suffixes[exp] || "e"+exp*3);
         }
 
-        function renderList() {
-            const list = document.getElementById('upgrade-list');
-            list.innerHTML = upgrades.map((u, i) => `
-                <div id="upg-${i}" onclick="buyUpgrade(${i})" class="upgrade-card p-4 rounded-xl flex justify-between items-center cursor-pointer border-l-4 border-transparent">
-                    <div class="flex items-center gap-3">
-                        <div class="text-xl">${u.icon}</div>
-                        <div>
-                            <div class="font-bold text-white text-xs">${u.name}</div>
-                            <div class="text-[9px] font-bold ${u.type === 'click' ? 'text-orange-500' : 'text-blue-500'}">+${formatMoney(u.value)}</div>
-                        </div>
-                    </div>
-                    <div class="text-right">
-                        <div class="font-black text-white text-xs">${formatMoney(u.cost)}</div>
-                        <div class="text-[9px] text-slate-500 font-bold" id="upg-count-${i}">MÁŠ ${u.count}x</div>
-                    </div>
+        async function fetchLeaderboard() { try { const res = await fetch(SERVER_URL); const data = await res.json(); return data.players || []; } catch(e) { return []; } }
+
+        // NOVÁ FUNKCE: Odešle data na server hned při rebirthu
+        async function syncWithServer() {
+            const pName = localStorage.getItem('honza3D_name') || "Hráč";
+            const rbCount = Math.round(multiplier - 1);
+            try {
+                const currentData = await fetchLeaderboard();
+                const updatedPlayers = [...currentData.filter(p => p.name !== pName), { name: pName, rebirths: rbCount, type: deviceType }];
+                await fetch(SERVER_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ players: updatedPlayers })
+                });
+                console.log("Sync úspěšný!");
+            } catch (e) { console.error("Sync selhal"); }
+        }
+
+        async function updateLeaderboardUI() {
+            const container = document.getElementById('leaderboard-content');
+            container.innerHTML = `<div class="text-center py-4 italic opacity-50">Načítám...</div>`;
+            const players = await fetchLeaderboard();
+            const pName = localStorage.getItem('honza3D_name') || "Hráč";
+            const myData = { name: pName, rebirths: Math.round(multiplier-1), type: deviceType, me: true };
+            const combined = [...players.filter(p => p.name !== pName), myData]
+                .filter(p => p.type === currentTab).sort((a,b) => b.rebirths - a.rebirths).slice(0, 10);
+
+            container.innerHTML = combined.map((p, i) => `
+                <div class="flex justify-between items-center p-3 ${p.me?'bg-orange-500/20 border border-orange-500/50':'bg-white/5'} rounded-lg">
+                    <span class="font-bold"><b class="text-orange-500 mr-2">${i+1}.</b> ${p.name}</span>
+                    <span class="font-black">${p.rebirths} RB</span>
                 </div>`).join('');
         }
 
-        function saveGame() {
-            const data = { 
-                money, 
-                multiplier, 
-                rebirthPrice, // Ukládáme i aktuální cenu Rebirthu
-                counts: upgrades.map(u => u.count) 
-            };
-            localStorage.setItem('honza3D_save', JSON.stringify(data));
-            const status = document.getElementById('save-status');
-            status.style.opacity = '1'; setTimeout(() => status.style.opacity = '0', 1500);
-        }
-
-        function loadGame() {
-            const saved = localStorage.getItem('honza3D_save');
-            if (saved) {
-                const data = JSON.parse(saved);
-                money = data.money || 0; 
-                multiplier = data.multiplier || 1.0;
-                rebirthPrice = data.rebirthPrice || 100000000000; // Načteme cenu
-                incomePerSecond = 0; clickPower = 1;
-                data.counts.forEach((count, i) => {
-                    upgrades[i].count = count;
-                    if (upgrades[i].type === 'auto') incomePerSecond += count * upgrades[i].value;
-                    else clickPower += count * upgrades[i].value;
-                });
-            }
-            renderList();
-            updateUI();
-        }
-
-        function buyUpgrade(idx) {
-            const u = upgrades[idx];
-            if (money >= u.cost) {
-                money -= u.cost; u.count++;
-                if(u.type === 'auto') incomePerSecond += u.value; else clickPower += u.value;
-                updateUI(); saveGame();
-            }
-        }
-
-        function handlePrint(e) {
-            money += clickPower * multiplier;
-            if (navigator.vibrate) navigator.vibrate(15);
-            if (Math.random() > 0.8) spawnItem();
-            updateUI();
-        }
+        function handlePrint(e) { money += clickPower * multiplier; updateUI(); saveGame(); }
+        function openLeaderboard() { document.getElementById('leaderboard-modal').style.display = 'flex'; updateLeaderboardUI(); }
+        function closeLeaderboard() { document.getElementById('leaderboard-modal').style.display = 'none'; }
+        function switchTab(tab) { currentTab = tab; document.getElementById('tab-pc').className = tab==='PC'?'flex-1 py-3 tab-active':'flex-1 py-3'; document.getElementById('tab-mobile').className = tab==='Mobil'?'flex-1 py-3 tab-active':'flex-1 py-3'; updateLeaderboardUI(); }
 
         function doRebirth() {
             if (money >= rebirthPrice) {
-                multiplier += 1.0; 
-                money = 0; 
-                incomePerSecond = 0; 
-                clickPower = 1;
-                
-                // ZDRAŽENÍ 5x
-                rebirthPrice *= 5; 
-
-                upgrades.forEach(u => u.count = 0);
-                renderList(); 
-                updateUI(); 
-                saveGame();
+                multiplier += 1.0; money = 0; incomePerSecond = 0; clickPower = 1;
+                rebirthPrice *= 5; upgrades.forEach(u => u.count = 0);
+                renderList(); updateUI(); saveGame();
+                syncWithServer(); // Synchronizovat okamžitě po rebirthu!
             }
         }
 
         function updateUI() {
+            let pName = localStorage.getItem('honza3D_name');
+            if (!pName) { pName = prompt("Zadej jméno pro žebříček:") || "Hráč" + Math.floor(Math.random()*100); localStorage.setItem('honza3D_name', pName); }
+            document.getElementById('player-name-display').innerText = `Hráč: ${pName}`;
             document.getElementById('money').innerText = formatMoney(money);
             document.getElementById('speed').innerText = formatMoney(incomePerSecond * multiplier) + "/s";
             document.getElementById('power').innerText = formatMoney(clickPower * multiplier) + "/klik";
             document.getElementById('rebirth-badge').innerText = multiplier.toFixed(1) + "x MULTIPLIER";
             document.getElementById('rebirth-price-tag').innerText = "Cena: " + formatMoney(rebirthPrice);
-
             const prog = Math.min((money / rebirthPrice) * 100, 100);
             document.getElementById('progress-bar').style.width = prog + "%";
             document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
-
-            const rbBtn = document.getElementById('rebirth-btn');
-            if (money >= rebirthPrice) rbBtn.classList.add('rebirth-ready'); else rbBtn.classList.remove('rebirth-ready');
-
+            const btn = document.getElementById('rebirth-btn');
+            if (money >= rebirthPrice) btn.classList.add('rebirth-ready'); else btn.classList.remove('rebirth-ready');
             upgrades.forEach((u, i) => {
                 const card = document.getElementById(`upg-${i}`);
-                if (!card) return;
-                document.getElementById(`upg-count-${i}`).innerText = `MÁŠ ${u.count}x`;
-                if (money >= u.cost) {
-                    card.classList.add('opacity-100'); card.classList.remove('opacity-40');
-                    card.style.borderLeftColor = u.type === 'click' ? '#f97316' : '#3b82f6';
-                } else {
-                    card.classList.remove('opacity-100'); card.classList.add('opacity-40');
-                    card.style.borderLeftColor = 'transparent';
-                }
+                if (card) { card.style.opacity = money >= u.cost ? "1" : "0.3"; card.style.filter = money >= u.cost ? "none" : "grayscale(0.5)"; }
             });
         }
 
-        function spawnItem() {
-            const item = document.createElement('div'); item.className = 'falling-item';
-            item.innerText = ["🚀", "🐉", "🤖", "⚔️", "🏰"][Math.floor(Math.random() * 5)];
-            item.style.left = Math.random() * 80 + 5 + "vw"; document.body.appendChild(item);
-            setTimeout(() => item.remove(), 3500);
+        function renderList() {
+            document.getElementById('upgrade-list').innerHTML = upgrades.map((u, i) => `
+                <div onclick="buyUpgrade(${i})" id="upg-${i}" class="upgrade-card ${u.type === 'click' ? 'upgrade-click' : 'upgrade-auto'} p-3 rounded-lg flex justify-between items-center cursor-pointer mb-2">
+                    <div class="flex gap-2 items-center"><span class="text-xl">${u.icon}</span><div><div class="font-bold text-[11px] text-white">${u.name}</div><div class="text-[9px] ${u.type === 'click' ? 'text-orange-500' : 'text-blue-500'} font-bold">+${formatMoney(u.value)}</div></div></div>
+                    <div class="text-right"><div class="text-[11px] font-black text-white">${formatMoney(u.cost)}</div><div class="text-[8px] opacity-50 font-bold uppercase">${u.count}x</div></div>
+                </div>`).join('');
         }
 
-        function resetGame() { if(confirm("Smazat vše?")) { localStorage.removeItem('honza3D_save'); location.reload(); } }
+        function buyUpgrade(idx) {
+            const u = upgrades[idx];
+            if (money >= u.cost) { money -= u.cost; u.count++; if(u.type === 'auto') incomePerSecond += u.value; else clickPower += u.value; updateUI(); saveGame(); }
+        }
+
+        function saveGame() { const data = { money, multiplier, rebirthPrice, counts: upgrades.map(u => u.count) }; localStorage.setItem('honza3D_save', JSON.stringify(data)); }
+        
+        function loadGame() {
+            const saved = localStorage.getItem('honza3D_save');
+            if (saved) {
+                const data = JSON.parse(saved);
+                money = data.money || 0; multiplier = data.multiplier || 1.0; rebirthPrice = data.rebirthPrice || 100000000000;
+                data.counts.forEach((count, i) => { if(upgrades[i]) { upgrades[i].count = count; if (upgrades[i].type === 'auto') incomePerSecond += count * upgrades[i].value; else clickPower += count * upgrades[i].value; }});
+            }
+            renderList(); updateUI();
+        }
 
         setInterval(() => { if (incomePerSecond > 0) { money += (incomePerSecond * multiplier) / 10; updateUI(); } }, 100);
-        setInterval(saveGame, 10000);
 
         loadGame();
     </script>
