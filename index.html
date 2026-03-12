@@ -289,25 +289,41 @@
         }
 
         function updateUI() {
-            let n = localStorage.getItem('honza_name') || "Hráč" + Math.floor(Math.random()*99);
-            localStorage.setItem('honza_name', n);
-            document.getElementById('player-name-tag').innerText = n + " | " + platform;
-            document.getElementById('money-display').innerText = format(money);
-            document.getElementById('gps-display').innerText = format(gps * multi) + "/s";
-            document.getElementById('gpc-display').innerText = format(gpc * multi) + "/klik";
-            document.getElementById('rb-badge').innerText = multi.toFixed(1) + "x MULTI";
-            document.getElementById('rb-price').innerText = "Cena: " + format(rbPrice);
-            const p = Math.min((money/rbPrice)*100, 100);
-            document.getElementById('prog-bar').style.width = p + "%";
-            document.getElementById('prog-val').innerText = Math.floor(p) + "%";
-            const btn = document.getElementById('rb-btn');
-            if(money >= rbPrice) { btn.style.opacity = "1"; btn.classList.add('bg-orange-600'); }
-            else { btn.style.opacity = "0.5"; btn.classList.remove('bg-orange-600'); }
-            upgrades.forEach((u,i) => {
-                const el = document.getElementById(`u-${i}`);
-                if(el) el.style.opacity = money >= u.cost ? "1" : "0.3";
-            });
-        }
+                    // 1. Získáme jméno z paměti
+                    let n = localStorage.getItem('honza_name');
+                    
+                    // 2. Pokud v paměti žádné není, teprve pak vytvoříme náhodné a uložíme ho
+                    if (!n) {
+                        n = "Hráč" + Math.floor(Math.random() * 99);
+                        localStorage.setItem('honza_name', n);
+                    }
+
+                    // 3. Aktualizace textů na obrazovce
+                    document.getElementById('player-name-tag').innerText = n + " | " + platform;
+                    document.getElementById('money-display').innerText = format(money);
+                    document.getElementById('gps-display').innerText = format(gps * multi) + "/s";
+                    document.getElementById('gpc-display').innerText = format(gpc * multi) + "/klik";
+                    document.getElementById('rb-badge').innerText = multi.toFixed(1) + "x MULTI";
+                    document.getElementById('rb-price').innerText = "Cena: " + format(rbPrice);
+                    
+                    const p = Math.min((money/rbPrice)*100, 100);
+                    document.getElementById('prog-bar').style.width = p + "%";
+                    document.getElementById('prog-val').innerText = Math.floor(p) + "%";
+                    
+                    const btn = document.getElementById('rb-btn');
+                    if(money >= rbPrice) { 
+                        btn.style.opacity = "1"; 
+                        btn.classList.add('bg-orange-600'); 
+                    } else { 
+                        btn.style.opacity = "0.5"; 
+                        btn.classList.remove('bg-orange-600'); 
+                    }
+                    
+                    upgrades.forEach((u,i) => {
+                        const el = document.getElementById(`u-${i}`);
+                        if(el) el.style.opacity = money >= u.cost ? "1" : "0.3";
+                    });
+                }
 
         /* --- CLOUD --- */
         async function sync() {
@@ -361,8 +377,17 @@
 
         function changeName() {
             const n = prompt("Tvé jméno (3-12 znaků):");
-            if(n && n.length >= 3 && n.length <= 12) { localStorage.setItem('honza_name', n); updateUI(); sync(); }
-        }
+            if(n && n.length >= 3 && n.length <= 12) { 
+                localStorage.setItem('honza_name', n); 
+                // Okamžitá aktualizace textů na obrazovce:
+                document.getElementById('player-name-tag').innerText = n + " | " + platform;
+                if(document.getElementById('my-name-display')) {
+                    document.getElementById('my-name-display').innerText = n;
+                }
+                updateUI(); 
+                sync(); 
+            }
+}
 
         function toggleFS() {
             if (!document.fullscreenElement) document.documentElement.requestFullscreen();
