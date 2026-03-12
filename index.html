@@ -10,16 +10,37 @@
         body { background: radial-gradient(circle at center, #1e293b 0%, #020617 100%); font-family: 'Rajdhani', sans-serif; touch-action: manipulation; }
         h1, .font-money { font-family: 'Orbitron', sans-serif; }
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(15px); z-index: 1000; }
-        .printer-btn { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 2px solid rgba(249, 115, 22, 0.3); box-shadow: 0 0 30px rgba(249, 115, 22, 0.1); transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        
+        /* Tiskárna se zářením */
+        .printer-btn { 
+            background: rgba(30, 41, 59, 0.7); 
+            backdrop-filter: blur(10px); 
+            border: 2px solid rgba(249, 115, 22, 0.3); 
+            box-shadow: 0 0 30px rgba(249, 115, 22, 0.1);
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
+        }
         .printer-btn:active { transform: scale(0.85); }
+
+        /* Karty upgradů se zářením */
         .upgrade-card { background: rgba(15, 23, 42, 0.6); border-left: 4px solid transparent; transition: all 0.2s ease; }
-        .upgrade-click { border-left-color: #f97316; box-shadow: inset 5px 0 15px rgba(249, 115, 22, 0.1); }
-        .upgrade-auto { border-left-color: #3b82f6; box-shadow: inset 5px 0 15px rgba(59, 130, 246, 0.1); }
+        .upgrade-click { border-left-color: #f97316; box-shadow: inset 5px 0 15px rgba(249, 115, 22, 0.05); }
+        .upgrade-auto { border-left-color: #3b82f6; box-shadow: inset 5px 0 15px rgba(59, 130, 246, 0.05); }
+        
         .tab-active { border-bottom: 3px solid #f97316; color: white; }
         #upgrade-list::-webkit-scrollbar { width: 4px; }
         #upgrade-list::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
-        .rebirth-ready { animation: neonPulse 1.5s infinite alternate; background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%) !important; color: white !important; opacity: 1 !important; }
+        
+        /* Rebirth neon efekt */
+        .rebirth-ready { 
+            animation: neonPulse 1.5s infinite alternate; 
+            background: linear-gradient(135deg, #7e22ce 0%, #a855f7 100%) !important; 
+            color: white !important; opacity: 1 !important; 
+            border: 1px solid #d8b4fe !important;
+        }
         @keyframes neonPulse { from { box-shadow: 0 0 10px #a855f7; } to { box-shadow: 0 0 25px #d8b4fe; } }
+
+        /* Fullscreen btn styl */
+        .fs-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body class="text-slate-200 select-none overflow-hidden h-screen w-screen text-sm">
@@ -37,45 +58,66 @@
     </div>
 
     <div class="flex h-full flex-col md:flex-row">
-        <div class="flex-grow flex flex-col items-center justify-center relative p-6">
-            <div class="absolute top-6 left-6 flex flex-col gap-1">
+        <div class="flex-grow flex flex-col items-center justify-center relative p-6 h-[60vh] md:h-full">
+            <div class="absolute top-6 left-6 flex flex-col gap-2">
                 <div id="rebirth-badge" class="text-lg font-black text-purple-400 font-money">1.0x MULTIPLIER</div>
-                <div id="player-name-display" class="text-[10px] text-orange-400 font-bold uppercase tracking-widest italic">Hráč: ---</div>
-                <div id="sync-status-text" class="text-[9px] text-green-500 uppercase font-bold tracking-widest">● Live Sync</div>
+                <div class="flex gap-2">
+                    <button onclick="toggleFS()" class="fs-btn px-3 py-1 rounded text-[9px] uppercase font-bold text-slate-400 hover:text-white transition-all">Fullscreen ⛶</button>
+                    <div id="sync-status-text" class="text-[9px] text-green-500 uppercase font-bold flex items-center gap-1">● Live Sync</div>
+                </div>
+                <div id="player-name-display" class="text-[10px] text-orange-400 font-bold uppercase tracking-widest italic mt-1">Hráč: ---</div>
             </div>
-            <button onclick="openLeaderboard()" class="absolute top-6 right-6 bg-orange-600 px-4 py-2 rounded-full font-black text-[10px] uppercase shadow-lg hover:bg-orange-500">🏆 Žebříček 🏆</button>
-            <h1 class="text-4xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-6">Honza3D</h1>
-            <button onclick="handlePrint(event)" class="printer-btn w-48 h-48 md:w-64 md:h-64 rounded-3xl flex items-center justify-center mb-6"><span class="text-7xl md:text-9xl">🖨️</span></button>
-            <div class="text-center space-y-4">
-                <div class="text-5xl md:text-7xl font-black font-money text-white break-all" id="money">0 Kč</div>
-                <div class="flex gap-4 bg-black/30 p-3 rounded-xl border border-white/5 justify-center">
+
+            <button onclick="openLeaderboard()" class="absolute top-6 right-6 bg-orange-600 px-4 py-2 rounded-full font-black text-[10px] uppercase shadow-lg shadow-orange-900/40 hover:bg-orange-500 transition-all">🏆 Žebříček</button>
+
+            <h1 class="text-3xl md:text-7xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-4 md:mb-8 text-center">Honza3D</h1>
+
+            <button onclick="handlePrint(event)" class="printer-btn w-40 h-40 md:w-64 md:h-64 rounded-3xl flex items-center justify-center mb-6">
+                <span class="text-6xl md:text-9xl">🖨️</span>
+            </button>
+
+            <div class="text-center space-y-2 md:space-y-4">
+                <div class="text-4xl md:text-7xl font-black font-money text-white break-all" id="money">0 Kč</div>
+                <div class="flex gap-4 bg-black/30 p-2 md:p-3 rounded-xl border border-white/5 justify-center">
                     <div class="text-blue-400 font-bold text-xs md:text-base" id="speed">0 Kč/s</div>
                     <div class="text-orange-400 font-bold text-xs md:text-base" id="power">1 Kč/klik</div>
                 </div>
             </div>
         </div>
 
-        <div class="w-full md:w-[400px] bg-slate-900/90 p-6 flex flex-col border-t md:border-t-0 md:border-l border-white/10 shadow-2xl backdrop-blur-xl">
-            <h2 class="text-xl font-black mb-4 uppercase italic border-b border-white/5 pb-2 text-orange-500">Vybavení (50)</h2>
-            <div id="upgrade-list" class="flex-grow overflow-y-auto space-y-2 mb-4 pr-2"></div>
-            <div class="space-y-3">
-                <div class="bg-black/20 p-3 rounded-lg">
-                    <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1"><span>Rebirth Progress</span><span id="progress-percent">0%</span></div>
-                    <div class="h-1.5 bg-black/40 rounded-full overflow-hidden"><div id="progress-bar" class="h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div></div>
+        <div class="w-full md:w-[400px] bg-slate-900/95 flex flex-col border-t md:border-t-0 md:border-l border-white/10 shadow-2xl backdrop-blur-xl h-[40vh] md:h-full">
+            <div class="p-4 border-b border-white/5 flex justify-between items-center bg-black/20">
+                <h2 class="text-lg font-black uppercase italic text-orange-500">Vybavení (50)</h2>
+                <span class="text-[10px] text-slate-500 font-bold uppercase">Shop</span>
+            </div>
+            
+            <div id="upgrade-list" class="flex-grow overflow-y-auto space-y-2 p-4 pr-2"></div>
+            
+            <div class="p-4 bg-slate-900/90 border-t border-white/10 space-y-3">
+                <div class="bg-black/40 p-3 rounded-lg border border-white/5">
+                    <div class="flex justify-between text-[10px] uppercase font-bold text-slate-500 mb-1">
+                        <span>Rebirth Progress</span>
+                        <span id="progress-percent" class="text-orange-500">0%</span>
+                    </div>
+                    <div class="h-1.5 bg-black/60 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="h-full bg-orange-500 shadow-[0_0_10px_#f97316] transition-all duration-300" style="width: 0%"></div>
+                    </div>
                 </div>
-                <button onclick="doRebirth()" id="rebirth-btn" class="w-full bg-slate-800 p-4 rounded-xl font-black opacity-50 uppercase text-sm transition-all text-slate-500">Rebirth (+1.0x)<div class="text-[10px] font-normal" id="rebirth-price-tag">Cena: 100B Kč</div></button>
+                <button onclick="doRebirth()" id="rebirth-btn" class="w-full bg-slate-800 p-4 rounded-xl font-black opacity-50 uppercase text-sm transition-all text-slate-500 flex flex-col items-center">
+                    Rebirth (+1.0x)
+                    <div class="text-[10px] font-normal mt-1" id="rebirth-price-tag">Cena: 100B Kč</div>
+                </button>
             </div>
         </div>
     </div>
 
     <script>
         const SERVER_URL = "https://api.npoint.io/422b28f90cc9fc44342d"; 
-        
         let money = 0, multiplier = 1.0, rebirthPrice = 100000000000, clickPower = 1, incomePerSecond = 0, currentTab = "PC";
         const deviceType = /Mobi|Android|iPhone/i.test(navigator.userAgent) ? "Mobil" : "PC";
 
         const manualCosts = ['15', '100', '1k', '5k', '25k', '100k', '500k', '2m', '10m', '50m', '250m', '1b', '5b', '25b', '100b', '500b', '2t', '10t', '50t', '250t', '1q', '5q', '25q', '100q', '500q', '2s', '10s', '50s', '250s', '1n', '5n', '25n', '100n', '500n', '2d', '10d', '50d', '250d', '1u', '5u', '25u', '100u', '500u', '1v', '10v', '100v', '1g', '10g', '100g', '1000g'];
-        const upgradeNames = ["Starý Ender", "Tryska 0.4mm", "Lepidlo", "Ocel tryska", "Bambu Lab", "Safír hrot", "Plech Průša", "Titan Heatbreak", "Resin bazén", "Laser měření", "Panelák farma", "Vulkan tryska", "Al extrudér", "Diamant hrot", "Voron", "Voda chlazení", "Hala Brno", "Ultra tryska", "Robot rám", "Karbid tryska", "Křemík pec", "Plazma extr.", "Cloud server", "Nukleární teplo", "USA pobočka", "Molekul tryska", "Nano linka", "Antihmota", "Měsíční těžba", "Gravit měnič", "Mars Kolonie", "Časová smyčka", "Orbital stanice", "Kvant extr.", "Saturn prstence", "Neutron tryska", "Mezigalaktik", "Temná hmota", "Dyson sféra", "Hologram", "Vládce soustavy", "Singularita", "Tkadlec", "Bůh tryska", "Honza3D Bůh", "Nekonečno", "Konec vesmíru", "Nová dimenze", "Matrix", "Tloušťka Tvojí Mámy"];
+        const upgradeNames = ["Starý Ender", "Tryska 0.4mm", "Lepidlo", "Ocel tryska", "Bambu Lab", "Safír hrot", "Plech Průša", "Titan Heatbreak", "Resin bazén", "Laser měření", "Panelák farma", "Vulkan tryska", "Al extrudér", "Diamant hrot", "Voron", "Voda chlazení", "Hala Brno", "Ultra tryska", "Robot rám", "Karbid tryska", "Křemík pec", "Plazma extr.", "Cloud server", "Nukleární teplo", "USA pobočka", "Molekul tryska", "Nano linka", "Antihmota", "Měsíční těžba", "Gravit měnič", "Mars Kolonie", "Časová smyčka", "Orbital stanice", "Kvant extr.", "Saturn prstence", "Neutron tryska", "Mezigalaktik", "Temná hmota", "Dyson sféra", "Hologram", "Vládce soustavy", "Singularita", "Tkadlec", "Bůh tryska", "Honza3D Bůh", "Nekonečno", "Konec vesmíru", "Nová dimenze", "Matrix", "Master Model"];
         const suffixes = ["", "k", "M", "B", "T", "Q", "S", "N", "D", "U", "V", "G"];
 
         function parseShortNumber(val) {
@@ -101,38 +143,28 @@
 
         async function fetchLeaderboard() { try { const res = await fetch(SERVER_URL); const data = await res.json(); return data.players || []; } catch(e) { return []; } }
 
-        // NOVÁ FUNKCE: Odešle data na server hned při rebirthu
         async function syncWithServer() {
             const pName = localStorage.getItem('honza3D_name') || "Hráč";
             const rbCount = Math.round(multiplier - 1);
             try {
                 const currentData = await fetchLeaderboard();
                 const updatedPlayers = [...currentData.filter(p => p.name !== pName), { name: pName, rebirths: rbCount, type: deviceType }];
-                await fetch(SERVER_URL, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ players: updatedPlayers })
-                });
-                console.log("Sync úspěšný!");
-            } catch (e) { console.error("Sync selhal"); }
+                await fetch(SERVER_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ players: updatedPlayers }) });
+            } catch (e) { console.error("Sync error"); }
         }
 
         async function updateLeaderboardUI() {
             const container = document.getElementById('leaderboard-content');
-            container.innerHTML = `<div class="text-center py-4 italic opacity-50">Načítám...</div>`;
+            container.innerHTML = `<div class="text-center py-4 italic opacity-50 uppercase text-[10px]">Připojování k serveru...</div>`;
             const players = await fetchLeaderboard();
             const pName = localStorage.getItem('honza3D_name') || "Hráč";
             const myData = { name: pName, rebirths: Math.round(multiplier-1), type: deviceType, me: true };
             const combined = [...players.filter(p => p.name !== pName), myData]
                 .filter(p => p.type === currentTab).sort((a,b) => b.rebirths - a.rebirths).slice(0, 10);
-
-            container.innerHTML = combined.map((p, i) => `
-                <div class="flex justify-between items-center p-3 ${p.me?'bg-orange-500/20 border border-orange-500/50':'bg-white/5'} rounded-lg">
-                    <span class="font-bold"><b class="text-orange-500 mr-2">${i+1}.</b> ${p.name}</span>
-                    <span class="font-black">${p.rebirths} RB</span>
-                </div>`).join('');
+            container.innerHTML = combined.map((p, i) => `<div class="flex justify-between items-center p-3 ${p.me?'bg-orange-500/20 border border-orange-500/50':'bg-white/5'} rounded-lg"><span class="font-bold"><b class="text-orange-500 mr-2">${i+1}.</b> ${p.name}</span><span class="font-black">${p.rebirths} RB</span></div>`).join('');
         }
 
+        function toggleFS() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
         function handlePrint(e) { money += clickPower * multiplier; updateUI(); saveGame(); }
         function openLeaderboard() { document.getElementById('leaderboard-modal').style.display = 'flex'; updateLeaderboardUI(); }
         function closeLeaderboard() { document.getElementById('leaderboard-modal').style.display = 'none'; }
@@ -142,8 +174,7 @@
             if (money >= rebirthPrice) {
                 multiplier += 1.0; money = 0; incomePerSecond = 0; clickPower = 1;
                 rebirthPrice *= 5; upgrades.forEach(u => u.count = 0);
-                renderList(); updateUI(); saveGame();
-                syncWithServer(); // Synchronizovat okamžitě po rebirthu!
+                renderList(); updateUI(); saveGame(); syncWithServer();
             }
         }
 
@@ -160,7 +191,8 @@
             document.getElementById('progress-bar').style.width = prog + "%";
             document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
             const btn = document.getElementById('rebirth-btn');
-            if (money >= rebirthPrice) btn.classList.add('rebirth-ready'); else btn.classList.remove('rebirth-ready');
+            if (money >= rebirthPrice) { btn.classList.add('rebirth-ready'); btn.classList.remove('opacity-50', 'text-slate-500'); } 
+            else { btn.classList.remove('rebirth-ready'); btn.classList.add('opacity-50', 'text-slate-500'); }
             upgrades.forEach((u, i) => {
                 const card = document.getElementById(`upg-${i}`);
                 if (card) { card.style.opacity = money >= u.cost ? "1" : "0.3"; card.style.filter = money >= u.cost ? "none" : "grayscale(0.5)"; }
@@ -193,7 +225,6 @@
         }
 
         setInterval(() => { if (incomePerSecond > 0) { money += (incomePerSecond * multiplier) / 10; updateUI(); } }, 100);
-
         loadGame();
     </script>
 </body>
