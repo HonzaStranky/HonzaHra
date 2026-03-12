@@ -3,439 +3,392 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Honza3D | Money Empire</title>
+    <title>Honza3D | Ultimate Empire</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     
     <style>
-        :root {
-            --primary: #f97316;
-            --secondary: #3b82f6;
-            --bg-dark: #020617;
-        }
+        :root { --primary: #f97316; --secondary: #3b82f6; --bg-dark: #020617; }
+        body { background: var(--bg-dark); font-family: 'Rajdhani', sans-serif; overflow: hidden; height: 100vh; color: white; }
 
-        body { 
-            background: var(--bg-dark);
-            font-family: 'Rajdhani', sans-serif; 
-            overflow: hidden;
-            height: 100vh;
-            transition: background 1s ease;
-        }
-
-        /* DYNAMICKÉ POZADÍ DLE BOHATSTVÍ */
+        /* --- FANCY POZADÍ --- */
         #dynamic-glow {
-            position: fixed;
-            inset: 0;
-            background: radial-gradient(circle at center, rgba(249, 115, 22, 0) 0%, rgba(2, 6, 23, 1) 100%);
-            pointer-events: none;
-            z-index: 0;
-            transition: opacity 0.5s ease;
+            position: fixed; inset: 0; pointer-events: none; z-index: 0;
+            background: radial-gradient(circle at center, rgba(59, 130, 246, 0.1) 0%, rgba(249, 115, 22, 0.05) 50%, rgba(2, 6, 23, 1) 100%);
+            transition: all 0.8s ease;
         }
 
-        canvas#particle-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            pointer-events: none;
-            z-index: 50;
+        canvas#particle-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 100; }
+
+        /* --- BÍLÝ TITULEK --- */
+        .main-title {
+            font-family: 'Orbitron', sans-serif;
+            color: #f97316;
+            text-shadow: 0 0 30px rgb(114, 54, 4), 0 10px 10px rgba(0,0,0,0.5);
         }
 
-        h1, .font-money { font-family: 'Orbitron', sans-serif; }
-
-        /* TISKÁRNA A TIER-UP ANIMACE */
+        /* --- TISKÁRNA --- */
         .printer-btn { 
-            background: rgba(30, 41, 59, 0.7); 
-            backdrop-filter: blur(10px); 
-            border: 2px solid rgba(249, 115, 22, 0.3); 
+            background: rgba(30, 41, 59, 0.5); backdrop-filter: blur(15px); 
+            border: 2px solid rgba(255, 255, 255, 0.1);
             transition: all 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275); 
-            z-index: 10;
         }
-
         .printer-btn:active { transform: scale(0.9); }
+        .combo-fire { border-color: #ef4444 !important; box-shadow: 0 0 50px rgba(239, 68, 68, 0.5) !important; animation: shake 0.2s infinite; }
+        @keyframes shake { 0% {transform:translate(1px,1px)} 50% {transform:translate(-1px,-1px)} 100% {transform:translate(1px,-1px)} }
 
-        @keyframes tier-up-pulse {
-            0% { transform: scale(1); box-shadow: 0 0 0px var(--primary); }
-            50% { transform: scale(1.2); box-shadow: 0 0 100px var(--primary); border-color: white; }
-            100% { transform: scale(1); box-shadow: 0 0 0px var(--primary); }
+        /* --- BAREVNÉ UPGRADY --- */
+        .upgrade-card { transition: 0.2s; cursor: pointer; border-radius: 1.25rem; margin-bottom: 0.75rem; }
+        .upgrade-card:active { transform: scale(0.95); }
+        
+        /* Modrá pro Pasivní (Auto) */
+        .card-blue { 
+            background: rgba(59, 130, 246, 0.1); 
+            border: 1px solid rgba(59, 130, 246, 0.3); 
+            border-left: 6px solid var(--secondary);
         }
-        .tier-up-active { animation: tier-up-pulse 0.8s ease-out; }
+        .card-blue:hover { background: rgba(59, 130, 246, 0.2); }
 
-        /* TOAST NOTIFIKACE */
-        #toast-container {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 2000;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            pointer-events: none;
+        /* Oranžová pro Kliky */
+        .card-orange { 
+            background: rgba(249, 115, 22, 0.1); 
+            border: 1px solid rgba(249, 115, 22, 0.3); 
+            border-left: 6px solid var(--primary);
         }
+        .card-orange:hover { background: rgba(249, 115, 22, 0.2); }
 
+        /* --- TOASTS --- */
         .toast {
-            background: rgba(15, 23, 42, 0.9);
-            border: 2px solid var(--primary);
-            color: white;
-            padding: 15px 30px;
-            border-radius: 50px;
-            font-weight: 900;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: rgba(15, 23, 42, 0.9); border-left: 4px solid var(--primary);
+            padding: 12px 24px; border-radius: 10px; font-weight: 900; font-family: 'Orbitron';
             animation: toastSlide 3s forwards;
-            font-family: 'Orbitron';
         }
+        @keyframes toastSlide { 0%{opacity:0; transform:translateY(50px)} 10%{opacity:1; transform:translateY(0)} 90%{opacity:1} 100%{opacity:0} }
 
-        @keyframes toastSlide {
-            0% { transform: translateY(-100px); opacity: 0; }
-            10% { transform: translateY(0); opacity: 1; }
-            90% { transform: translateY(0); opacity: 1; }
-            100% { transform: translateY(-100px); opacity: 0; }
-        }
-
-        /* OSTATNÍ STYLY ZŮSTÁVAJÍ */
-        .upgrade-container { height: calc(100vh - 460px); overflow-y: auto; }
-        @media (max-width: 768px) { .upgrade-container { height: calc(100vh - 530px); } }
-        .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; backdrop-filter: blur(8px); }
-        .tab-btn.active { border-color: #f97316; color: #f97316; opacity: 1; }
+        .upgrade-container { height: calc(100vh - 480px); overflow-y: auto; padding-right: 5px; }
+        .tab-active { color: var(--primary); border-bottom: 2px solid var(--primary); opacity: 1 !important; }
     </style>
 </head>
-<body class="text-slate-200 select-none">
+<body>
 
     <div id="dynamic-glow"></div>
     <canvas id="particle-canvas"></canvas>
-    <div id="toast-container"></div>
+    
+    <button onclick="toggleFS()" class="fixed top-6 left-6 z-[500] bg-white/5 hover:bg-white/10 px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest border border-white/10 transition-all">
+        📺 Full Screen
+    </button>
 
-    <div id="leaderboard-modal" class="modal items-center justify-center p-4">
-        <div class="bg-slate-900 border border-orange-500/30 w-full max-w-md rounded-3xl p-8 relative flex flex-col max-h-[85vh]">
-            <button onclick="closeLeaderboard()" class="absolute top-6 right-6 text-slate-500 text-2xl hover:text-white">✕</button>
-            <h2 class="text-2xl font-black text-orange-500 text-center uppercase mb-6 tracking-widest italic">Žebříčky Impéria</h2>
-            <div class="flex justify-around mb-6 border-b border-white/10 pb-2">
-                <button onclick="setLdbTab('rebirths')" id="tab-rebirths" class="tab-btn active text-[10px] font-black uppercase px-2 opacity-50">Top Rebirths</button>
-                <button onclick="setLdbTab('money')" id="tab-money" class="tab-btn text-[10px] font-black uppercase px-2 opacity-50">Peníze</button>
-                <button onclick="setLdbTab('platform')" id="tab-platform" class="tab-btn text-[10px] font-black uppercase px-2 opacity-50">Zařízení</button>
+    <div id="ldb-modal" class="fixed inset-0 bg-black/95 z-[3000] hidden items-center justify-center p-4 backdrop-blur-md">
+        <div class="bg-slate-900 border border-white/10 w-full max-w-md rounded-[2.5rem] p-8 relative flex flex-col max-h-[85vh]">
+            <button onclick="closeLdb()" class="absolute top-6 right-8 text-3xl text-slate-500 hover:text-white">×</button>
+            <h2 class="text-2xl font-black text-orange-500 text-center uppercase italic mb-6">Globální Statistiky</h2>
+            
+            <div class="flex justify-between mb-6 border-b border-white/5 pb-2 text-[10px] font-black uppercase">
+                <button onclick="setTab('rebirths')" id="tab-rebirths" class="tab-active opacity-50 px-2">Top RB</button>
+                <button onclick="setTab('money')" id="tab-money" class="opacity-50 px-2">Peníze</button>
+                <button onclick="setTab('platform')" id="tab-platform" class="opacity-50 px-2">Zařízení</button>
             </div>
-            <div id="leaderboard-content" class="space-y-2 overflow-y-auto pr-2 mb-4 flex-grow min-h-[300px]"></div>
-            <div class="border-t border-white/10 pt-4 mt-auto text-center">
-                <div id="current-name-display" class="font-bold text-orange-400 italic text-lg mb-2">---</div>
-                <button onclick="changeNamePrompt()" class="bg-white/5 hover:bg-white/10 px-6 py-2 rounded-xl text-[10px] uppercase font-bold border border-white/10">Změnit Jméno ✏️</button>
+
+            <div id="ldb-content" class="flex-grow overflow-y-auto space-y-2 pr-2"></div>
+            
+            <div class="mt-6 pt-4 border-t border-white/10 text-center">
+                <button onclick="changeName()" class="text-[10px] uppercase font-bold bg-white/5 px-6 py-2 rounded-lg border border-white/5">Změnit jméno ✏️</button>
             </div>
         </div>
     </div>
 
     <div class="flex flex-col md:flex-row h-screen relative z-10">
-        <div class="w-full md:flex-grow flex flex-col items-center justify-center p-4 relative h-[45%] md:h-full">
-            <div class="absolute top-6 left-6">
-                <div id="rebirth-badge" class="text-xs font-black text-purple-400 font-money bg-purple-900/20 px-3 py-1 rounded-full border border-purple-500/30">1.0x MULTIPLIER</div>
+        <div class="w-full md:flex-grow flex flex-col items-center justify-center p-6 relative">
+            <div class="absolute top-20 left-8">
+                <div id="rb-badge" class="bg-purple-600/20 text-purple-400 border border-purple-500/30 px-4 py-1 rounded-full text-[10px] font-black italic">1.0x MULTI</div>
+                <div id="combo-tag" class="text-orange-500 font-black italic mt-2 hidden animate-bounce text-xl">COMBO: <span id="combo-val">0</span>x 🔥</div>
             </div>
-            
-            <button onclick="openLeaderboard()" class="absolute top-6 right-6 bg-orange-600 px-5 py-2 rounded-full font-black text-[10px] uppercase shadow-xl hover:scale-105 transition-transform">🏆 ŽEBŘÍČEK</button>
 
-            <h1 class="text-5xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-orange-400 to-orange-700 italic mb-4">Honza3D</h1>
+            <button onclick="openLdb()" class="absolute top-6 right-6 bg-orange-600 px-6 py-2.5 rounded-2xl font-black text-xs uppercase shadow-lg hover:scale-105 transition-all">🏆 Žebříček</button>
 
-            <button id="printer-main" onclick="handlePrint(event)" class="printer-btn w-40 h-40 md:w-64 md:h-64 rounded-[3rem] flex items-center justify-center mb-6 relative">
-                <span id="printer-emoji" class="text-7xl md:text-9xl">🖨️</span>
+            <h1 class="main-title text-6xl md:text-9xl font-black italic mb-8">Honza3D</h1>
+
+            <button id="printer-main" onclick="handlePrint(event)" class="printer-btn w-52 h-52 md:w-72 md:h-72 rounded-[4rem] flex items-center justify-center mb-10">
+                <span class="text-8xl md:text-9xl">🖨️</span>
             </button>
 
             <div class="text-center">
-                <div class="text-4xl md:text-7xl font-black font-money text-white mb-2" id="money">0 Kč</div>
-                <div class="flex gap-3 justify-center text-[10px] md:text-sm">
-                    <span class="text-blue-400 font-bold bg-blue-900/20 px-4 py-1.5 rounded-lg border border-blue-500/20" id="speed">0 Kč/s</span>
-                    <span class="text-orange-400 font-bold bg-orange-900/20 px-4 py-1.5 rounded-lg border border-orange-500/20" id="power">1 Kč/klik</span>
+                <div id="money-display" class="text-5xl md:text-8xl font-black font-money mb-4">0 Kč</div>
+                <div class="flex gap-4 justify-center text-xs font-bold">
+                    <span class="text-blue-400 bg-blue-400/10 px-4 py-2 rounded-xl border border-blue-400/20" id="gps-display">0 Kč/s</span>
+                    <span class="text-orange-400 bg-orange-400/10 px-4 py-2 rounded-xl border border-orange-400/20" id="gpc-display">1 Kč/klik</span>
                 </div>
             </div>
         </div>
 
-        <div class="w-full md:w-[420px] bg-slate-900/90 border-t md:border-t-0 md:border-l border-white/10 flex flex-col h-[55%] md:h-full">
-            <div class="p-5 border-b border-white/5 bg-black/20 flex justify-between items-center">
-                <h2 class="text-lg font-black uppercase text-orange-500 italic">Průmyslová Zóna</h2>
-                <span id="player-display" class="text-[10px] text-slate-500 font-bold uppercase"></span>
+        <div class="w-full md:w-[450px] bg-slate-900/80 backdrop-blur-2xl border-l border-white/10 flex flex-col h-[55%] md:h-full">
+            <div class="p-6 border-b border-white/5">
+                <h2 class="text-xl font-black uppercase text-orange-500 italic">Upgrade Centrum</h2>
+                <div id="player-name-tag" class="text-[9px] text-slate-500 font-bold uppercase mt-1"></div>
             </div>
-            
-            <div id="upgrade-list" class="upgrade-container p-4"></div>
-            
-            <div class="p-6 bg-slate-900 border-t border-white/10 mt-auto">
-                <div class="bg-black/40 p-3 rounded-xl border border-white/5 mb-4">
-                    <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
+
+            <div id="upgrade-list" class="upgrade-container p-6"></div>
+
+            <div class="p-6 bg-black/40 mt-auto border-t border-white/10">
+                <div class="mb-4">
+                    <div class="flex justify-between text-[10px] font-black text-slate-500 uppercase mb-2">
                         <span>Progress k Rebirthu</span>
-                        <span id="progress-percent" class="text-orange-500">0%</span>
+                        <span id="prog-val" class="text-orange-500">0%</span>
                     </div>
-                    <div class="h-1.5 bg-black/60 rounded-full overflow-hidden">
-                        <div id="progress-bar" class="h-full bg-orange-500 transition-all duration-300" style="width: 0%"></div>
+                    <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                        <div id="prog-bar" class="h-full bg-orange-500 transition-all duration-500" style="width: 0%"></div>
                     </div>
                 </div>
-                <button onclick="doRebirth()" id="rebirth-btn" class="w-full bg-slate-800 p-4 rounded-2xl font-black opacity-50 uppercase text-sm transition-all text-slate-500 flex flex-col items-center">
+                <button onclick="doRebirth()" id="rb-btn" class="w-full bg-slate-800 p-5 rounded-2xl font-black uppercase text-sm opacity-50 transition-all">
                     Provést Rebirth (+1.0x)
-                    <div class="text-[10px] font-normal" id="rebirth-price-tag">Cena: 100B Kč</div>
+                    <div id="rb-price" class="text-[10px] font-normal opacity-60">Cena: 100B Kč</div>
                 </button>
             </div>
         </div>
     </div>
 
-    <script>
-        /* --- CORE DATA --- */
-        const BIN_ID = "69b2c797b7ec241ddc61e402";
-        const MASTER_KEY = "$2a$10$p9H9.IwZd4RwszyzR8Ojke.IrWVwKXcn6cXbF141uUazU.Lr1ZViW";
-        const SERVER_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+    <div id="toast-container" class="fixed bottom-10 left-1/2 -translate-x-1/2 z-[2000] flex flex-col gap-2"></div>
 
-        let money = 0, multiplier = 1.0, rebirthPrice = 100000000000, clickPower = 1, incomePerSecond = 0;
-        let currentLdbTab = 'rebirths', currentTier = 0;
+    <script>
+        const BIN_ID = "69b2c797b7ec241ddc61e402", MASTER_KEY = "$2a$10$p9H9.IwZd4RwszyzR8Ojke.IrWVwKXcn6cXbF141uUazU.Lr1ZViW", SERVER_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
+        let money = 0, multi = 1.0, rbPrice = 1e11, gpc = 1, gps = 0, combo = 0, lastClick = 0, currentTab = 'rebirths';
         const platform = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent) ? "Mobil" : "PC";
         const suffixes = ["", "k", "M", "B", "T", "Q", "S", "N", "D", "U", "V", "G"];
+        let reachedM = new Set();
+
+        const upgNames = ["Starý Ender", "Tryska 0.4mm", "Lepidlo", "Ocel tryska", "Bambu Lab", "Safír hrot", "Plech Průša", "Titan Heat", "Resin bazén", "Laser měření", "Panelák", "Vulkan", "Al extrudér", "Diamant", "Voron Kit", "Voda", "Hala Brno", "Ultra", "Robot", "Master"];
+        const upgCosts = ['15', '100', '1k', '5k', '25k', '100k', '500k', '2m', '10m', '50m', '250m', '1b', '5b', '25b', '100b', '500b', '2t', '10t', '50t', '250t'];
         
-        // Milníky pro Achievementy
-        const milestones = [100000, 1000000, 100000000, 1000000000, 100000000000, 1000000000000, 100000000000000];
-        let reachedMilestones = new Set();
-
-        const upgradeNames = ["Starý Ender", "Tryska 0.4mm", "Lepidlo", "Ocel tryska", "Bambu Lab", "Safír hrot", "Plech Průša", "Titan Heatbreak", "Resin bazén", "Laser měření", "Panelák farma", "Vulkan tryska", "Al extrudér", "Diamant hrot", "Voron", "Voda chlazení", "Hala Brno", "Ultra tryska", "Robot rám", "Karbid tryska", "Křemík pec", "Plazma extr.", "Cloud server", "Nukleární teplo", "USA pobočka", "Molekul tryska", "Nano linka", "Antihmota", "Měsíční těžba", "Gravit měnič", "Mars Kolonie", "Časová smyčka", "Orbital stanice", "Kvant extr.", "Saturn prstence", "Neutron tryska", "Mezigalaktik", "Temná hmota", "Dyson sféra", "Hologram", "Vládce soustavy", "Singularita", "Tkadlec", "Bůh tryska", "Honza3D Bůh", "Nekonečno", "Konec vesmíru", "Nová dimenze", "Matrix", "Master Model"];
-        const manualCosts = ['15', '100', '1k', '5k', '25k', '100k', '500k', '2m', '10m', '50m', '250m', '1b', '5b', '25b', '100b', '500b', '2t', '10t', '50t', '250t', '1q', '5q', '25q', '100q', '500q', '2s', '10s', '50s', '250s', '1n', '5n', '25n', '100n', '500n', '2d', '10d', '50d', '250d', '1u', '5u', '25u', '100u', '500u', '1v', '10v', '100v', '1g', '10g', '100g', '1000g'];
-
-        function parseShortNumber(val) {
-            val = val.toLowerCase(); const num = parseFloat(val);
-            if (val.includes('k')) return num * 1e3; if (val.includes('m')) return num * 1e6;
-            if (val.includes('b')) return num * 1e9; if (val.includes('t')) return num * 1e12;
-            if (val.includes('q')) return num * 1e15; if (val.includes('s')) return num * 1e18;
-            if (val.includes('n')) return num * 1e21; if (val.includes('d')) return num * 1e24;
-            if (val.includes('u')) return num * 1e27; if (val.includes('v')) return num * 1e30;
-            if (val.includes('g')) return num * 1e33; return num;
+        function parseN(v) { 
+            v = v.toLowerCase(); let n = parseFloat(v);
+            if(v.includes('k')) n*=1e3; if(v.includes('m')) n*=1e6;
+            if(v.includes('b')) n*=1e9; if(v.includes('t')) n*=1e12;
+            return n;
         }
 
-        const upgrades = upgradeNames.map((name, i) => ({
-            id: i, name, cost: parseShortNumber(manualCosts[i]), value: parseShortNumber(manualCosts[i]) / 8,
-            type: i % 2 !== 0 ? 'click' : 'auto', icon: i % 2 !== 0 ? "⚡" : "📦", count: 0
+        const upgrades = upgNames.map((n, i) => ({
+            id: i, name: n, cost: parseN(upgCosts[i]), val: parseN(upgCosts[i])/6,
+            type: i % 2 === 0 ? 'auto' : 'click', count: 0
         }));
 
-        function formatMoney(num) {
-            if (num < 1000) return Math.floor(num) + " Kč";
-            const exp = Math.floor(Math.log10(num) / 3);
-            return (num / Math.pow(1000, exp)).toLocaleString('cs-CZ', {maximumFractionDigits: 1}) + " " + (suffixes[exp] || "e"+exp*3);
+        function format(n) {
+            if(n < 1000) return Math.floor(n) + " Kč";
+            let e = Math.floor(Math.log10(n)/3);
+            return (n/Math.pow(1000,e)).toLocaleString('cs-CZ',{maximumFractionDigits:1}) + " " + suffixes[e];
         }
 
-        /* --- DOPAMINE SYSTEMS --- */
-        
-        // 1. Částicový systém
+        /* --- ČÁSTICE --- */
         const canvas = document.getElementById('particle-canvas');
         const ctx = canvas.getContext('2d');
         let particles = [];
+        window.onresize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
+        window.onresize();
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
-
-        class Particle {
-            constructor(x, y) {
-                this.x = x; this.y = y;
-                this.size = Math.random() * 5 + 2;
-                this.speedX = Math.random() * 10 - 5;
-                this.speedY = Math.random() * -15 - 5;
-                this.gravity = 0.6;
-                this.color = `rgba(249, 115, 22, ${Math.random()})`;
-                this.life = 1;
+        class P {
+            constructor(x,y) { 
+                this.x=x; 
+                this.y=y; 
+                // Menší čísla u sx a sy = pomalejší rozlet
+                this.sx=Math.random()*4-3; 
+                this.sy=Math.random()*-6-3; 
+                this.o=1; 
+                this.t=Math.random()>0.5?"💰":"Kč"; 
             }
-            update() {
-                this.speedY += this.gravity;
-                this.x += this.speedX;
-                this.y += this.speedY;
-                this.life -= 0.02;
+            update() { 
+                this.sy+=0.4; 
+                this.x+=this.sx; 
+                this.y+=this.sy; 
+                // Menší číslo u odečítání o (např. 0.01) = věci vydrží déle viditelné
+                this.o-=0.03; 
             }
-            draw() {
-                ctx.fillStyle = this.color;
-                ctx.font = "bold 16px Arial";
-                ctx.fillText("Kč", this.x, this.y);
+            draw() { 
+                ctx.globalAlpha=this.o; 
+                ctx.font="bold 20px Arial"; 
+                ctx.fillStyle="#f97316"; 
+                ctx.fillText(this.t,this.x,this.y); 
             }
         }
 
-        function animateParticles() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            for (let i = 0; i < particles.length; i++) {
-                particles[i].update();
-                particles[i].draw();
-                if (particles[i].life <= 0) {
-                    particles.splice(i, 1); i--;
-                }
-            }
-            requestAnimationFrame(animateParticles);
+        function anim() {
+            ctx.clearRect(0,0,canvas.width,canvas.height);
+            particles = particles.filter(p => p.o > 0);
+            particles.forEach(p => { p.update(); p.draw(); });
+            requestAnimationFrame(anim);
         }
-        animateParticles();
+        anim();
 
-        // 2. Toast Notifikace
-        function showToast(text) {
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            toast.className = 'toast';
-            toast.innerText = text;
-            container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        // 3. Wealth Glow & Tier Up
-        function updateDopamineUI() {
-            // Glow intensity
-            const glow = document.getElementById('dynamic-glow');
-            const ratio = Math.min(money / (rebirthPrice / 10), 1);
-            glow.style.opacity = ratio;
-            glow.style.background = `radial-gradient(circle at center, rgba(249, 115, 22, ${ratio * 0.3}) 0%, rgba(2, 6, 23, 1) 100%)`;
-
-            // Tier Up Logic (K, M, B, T...)
-            const newTier = money > 0 ? Math.floor(Math.log10(money) / 3) : 0;
-            if (newTier > currentTier && newTier < suffixes.length) {
-                currentTier = newTier;
-                const printer = document.getElementById('printer-main');
-                printer.classList.add('tier-up-active');
-                setTimeout(() => printer.classList.remove('tier-up-active'), 800);
-                showToast(`DOSAŽEN TIER: ${suffixes[currentTier] || 'Základ'}`);
-            }
-
-            // Milestone Checks
-            milestones.forEach(m => {
-                if (money >= m && !reachedMilestones.has(m)) {
-                    reachedMilestones.add(m);
-                    showToast(`MILNÍK: ${formatMoney(m)}!`);
-                }
-            });
-        }
-
-        /* --- GAME LOGIC --- */
+        /* --- LOGIKA --- */
         function handlePrint(e) {
-            const gain = clickPower * multiplier;
-            money += gain;
-            
-            // Spawn částic
+            const now = Date.now();
+            if(now - lastClick < 400) combo++; else combo = 1;
+            lastClick = now;
+            let cB = combo > 50 ? 5 : (combo > 10 ? 1.5 : 1);
+            money += gpc * multi * cB;
+
             const x = e.clientX || (e.touches ? e.touches[0].clientX : window.innerWidth/2);
             const y = e.clientY || (e.touches ? e.touches[0].clientY : window.innerHeight/2);
-            for(let i=0; i<8; i++) particles.push(new Particle(x, y));
+            for(let i=0; i<8; i++) particles.push(new P(x,y));
+            
+            checkDopamine(); updateUI(); save();
+        }
 
-            updateUI();
-            updateDopamineUI();
-            saveGame();
+        function checkDopamine() {
+            const ct = document.getElementById('combo-tag');
+            const pr = document.getElementById('printer-main');
+            if(combo > 5) { 
+                ct.classList.remove('hidden'); document.getElementById('combo-val').innerText = combo;
+                if(combo > 20) pr.classList.add('combo-fire');
+            } else {
+                ct.classList.add('hidden'); pr.classList.remove('combo-fire');
+            }
+            
+            let mVal = money > 0 ? Math.floor(Math.log10(money)/3) : 0;
+            const ms = [1e5, 1e6, 1e9, 1e12];
+            ms.forEach(m => { if(money>=m && !reachedM.has(m)) { reachedM.add(m); toast("MILNÍK: " + format(m)); } });
+        }
+
+        function toast(t) {
+            const c = document.getElementById('toast-container');
+            const d = document.createElement('div'); d.className = 'toast'; d.innerText = t;
+            c.appendChild(d); setTimeout(() => d.remove(), 3000);
+        }
+
+        function buyUpgrade(i) {
+            const u = upgrades[i];
+            if(money >= u.cost) {
+                money -= u.cost; u.count++;
+                if(u.type==='auto') gps += u.val; else gpc += u.val;
+                u.cost *= 1.15;
+                renderUpgrades(); updateUI(); save();
+            }
         }
 
         function doRebirth() {
-            if (money >= rebirthPrice) {
-                multiplier += 1.0;
-                money = 0; incomePerSecond = 0; clickPower = 1;
-                rebirthPrice *= 5;
-                currentTier = 0; // Reset tieru
-                reachedMilestones.clear(); // Reset milníků
-                upgrades.forEach(u => u.count = 0);
-                renderList(); updateUI(); updateDopamineUI();
-                saveGame(); syncWithServer();
-                showToast("REBIRTH PROVEDEN! (+1.0x)");
+            if(money >= rbPrice) {
+                multi += 1.0; money=0; gpc=1; gps=0; rbPrice*=10; reachedM.clear();
+                upgrades.forEach(u => { u.count=0; u.cost = parseN(upgCosts[u.id]); });
+                renderUpgrades(); updateUI(); save(); sync();
+                toast("REBIRTH PROVEDEN!");
             }
         }
 
-        /* --- OSTATNÍ FUNKCE (ZŮSTÁVAJÍ) --- */
+        function renderUpgrades() {
+            document.getElementById('upgrade-list').innerHTML = upgrades.map((u, i) => `
+                <div onclick="buyUpgrade(${i})" id="u-${i}" class="upgrade-card ${u.type==='auto'?'card-blue':'card-orange'} p-4 flex justify-between items-center">
+                    <div>
+                        <div class="text-[11px] font-black uppercase text-white">${u.name}</div>
+                        <div class="text-[9px] opacity-60">+${format(u.val)} ${u.type==='auto'?'/s':'/klik'}</div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-orange-400 font-black text-xs">${format(u.cost)}</div>
+                        <div class="text-[8px] opacity-40 uppercase">Level ${u.count}</div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
         function updateUI() {
-            let pName = localStorage.getItem('honza3D_name');
-            if (!pName) { pName = "Hráč" + Math.floor(Math.random()*100); localStorage.setItem('honza3D_name', pName); }
-            document.getElementById('player-display').innerText = pName + " [" + platform + "]";
-            document.getElementById('money').innerText = formatMoney(money);
-            document.getElementById('speed').innerText = formatMoney(incomePerSecond * multiplier) + "/s";
-            document.getElementById('power').innerText = formatMoney(clickPower * multiplier) + "/klik";
-            document.getElementById('rebirth-badge').innerText = multiplier.toFixed(1) + "x MULTIPLIER";
-            document.getElementById('rebirth-price-tag').innerText = "Cena: " + formatMoney(rebirthPrice);
-            const prog = Math.min((money / rebirthPrice) * 100, 100);
-            document.getElementById('progress-bar').style.width = prog + "%";
-            document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
-            const btn = document.getElementById('rebirth-btn');
-            if (money >= rebirthPrice) { btn.classList.add('rebirth-ready'); btn.style.opacity = "1"; }
-            else { btn.classList.remove('rebirth-ready'); btn.style.opacity = "0.5"; }
-            upgrades.forEach((u, i) => {
-                const card = document.getElementById(`upg-${i}`);
-                if (card) card.style.opacity = money >= u.cost ? "1" : "0.3";
+            let n = localStorage.getItem('honza_name') || "Hráč" + Math.floor(Math.random()*99);
+            localStorage.setItem('honza_name', n);
+            document.getElementById('player-name-tag').innerText = n + " | " + platform;
+            document.getElementById('money-display').innerText = format(money);
+            document.getElementById('gps-display').innerText = format(gps * multi) + "/s";
+            document.getElementById('gpc-display').innerText = format(gpc * multi) + "/klik";
+            document.getElementById('rb-badge').innerText = multi.toFixed(1) + "x MULTI";
+            document.getElementById('rb-price').innerText = "Cena: " + format(rbPrice);
+            const p = Math.min((money/rbPrice)*100, 100);
+            document.getElementById('prog-bar').style.width = p + "%";
+            document.getElementById('prog-val').innerText = Math.floor(p) + "%";
+            const btn = document.getElementById('rb-btn');
+            if(money >= rbPrice) { btn.style.opacity = "1"; btn.classList.add('bg-orange-600'); }
+            else { btn.style.opacity = "0.5"; btn.classList.remove('bg-orange-600'); }
+            upgrades.forEach((u,i) => {
+                const el = document.getElementById(`u-${i}`);
+                if(el) el.style.opacity = money >= u.cost ? "1" : "0.3";
             });
         }
 
-        function renderList() {
-            document.getElementById('upgrade-list').innerHTML = upgrades.map((u, i) => `
-                <div onclick="buyUpgrade(${i})" id="upg-${i}" class="upgrade-card ${u.type === 'click' ? 'upgrade-click' : 'upgrade-auto'} p-3 rounded-xl flex justify-between items-center cursor-pointer active:scale-95 transition-all">
-                    <div class="flex gap-3 items-center">
-                        <span class="text-2xl">${u.icon}</span>
-                        <div>
-                            <div class="font-bold text-[11px] uppercase">${u.name}</div>
-                            <div class="text-[9px] opacity-60">+${formatMoney(u.value)} ${u.type === 'click' ? '/klik' : '/s'}</div>
+        /* --- CLOUD --- */
+        async function sync() {
+            const n = localStorage.getItem('honza_name');
+            if(!n || n.startsWith("Hráč")) return;
+            try {
+                const r = await fetch(`${SERVER_URL}/latest`, { headers: {"X-Master-Key": MASTER_KEY}});
+                const d = await r.json();
+                let ps = d.record.players || [];
+                const my = { name: n, rb: Math.round(multi-1), money: Math.floor(money), dev: platform, last: Date.now() };
+                const idx = ps.findIndex(p => p.name === n);
+                if(idx > -1) ps[idx] = my; else ps.push(my);
+                await fetch(SERVER_URL, { method:'PUT', headers: {"Content-Type":"application/json", "X-Master-Key": MASTER_KEY}, body: JSON.stringify({players: ps.slice(0,100)}) });
+            } catch(e) {}
+        }
+
+        async function updateLdb() {
+            const c = document.getElementById('ldb-content');
+            c.innerHTML = "<div class='text-center py-10 opacity-30 text-xs'>Načítám...</div>";
+            try {
+                const r = await fetch(`${SERVER_URL}/latest`, { headers: {"X-Master-Key": MASTER_KEY}});
+                const d = await r.json();
+                let ps = d.record.players || [];
+                
+                if(currentTab === 'rebirths') ps.sort((a,b) => b.rb - a.rb);
+                else if(currentTab === 'money') ps.sort((a,b) => b.money - a.money);
+                else if(currentTab === 'platform') ps.sort((a,b) => a.dev.localeCompare(b.dev));
+
+                c.innerHTML = ps.map((p,i) => `
+                    <div class="flex justify-between items-center p-3 bg-white/5 rounded-xl">
+                        <span class="text-[10px] font-black w-4 opacity-30">${i+1}</span>
+                        <span class="flex-grow font-bold text-xs px-2">${p.name}</span>
+                        <div class="text-right">
+                            <div class="text-orange-400 font-black text-[10px]">${currentTab==='money'?format(p.money):p.rb+' RB'}</div>
+                            <div class="text-[8px] opacity-40 uppercase">${p.dev}</div>
                         </div>
                     </div>
-                    <div class="text-right font-black text-[11px] text-orange-400 font-money">${formatMoney(u.cost)}</div>
-                </div>`).join('');
+                `).join('');
+            } catch(e) { c.innerHTML = "Offline"; }
         }
 
-        function buyUpgrade(idx) {
-            const u = upgrades[idx];
-            if (money >= u.cost) {
-                money -= u.cost; u.count++;
-                if(u.type === 'auto') incomePerSecond += u.value; else clickPower += u.value;
-                updateUI(); saveGame();
-            }
-        }
-
-        /* --- CLOUD & LDB (Zkráceno pro prostor) --- */
-        async function syncWithServer() {
-            const pName = localStorage.getItem('honza3D_name');
-            if (!pName || pName.toLowerCase().startsWith("hráč")) return;
-            try {
-                const getRes = await fetch(`${SERVER_URL}/latest`, { headers: { "X-Master-Key": MASTER_KEY } });
-                const responseData = await getRes.json();
-                let players = responseData.record.players || [];
-                const myData = { name: pName, rebirths: Math.round(multiplier-1), money: Math.floor(money), platform, lastSeen: Date.now() };
-                const idx = players.findIndex(p => p.name === pName);
-                if (idx > -1) players[idx] = myData; else players.push(myData);
-                await fetch(SERVER_URL, { method: 'PUT', headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY }, body: JSON.stringify({ players: players.slice(0, 100) }) });
-            } catch (e) {}
-        }
-
-        function openLeaderboard() { document.getElementById('leaderboard-modal').style.display = 'flex'; updateLeaderboardUI(); }
-        function closeLeaderboard() { document.getElementById('leaderboard-modal').style.display = 'none'; }
+        function openLdb() { document.getElementById('ldb-modal').style.display = 'flex'; updateLdb(); }
+        function closeLdb() { document.getElementById('ldb-modal').style.display = 'none'; }
         
-        async function updateLeaderboardUI() {
-            const container = document.getElementById('leaderboard-content');
-            container.innerHTML = "<div class='text-center py-20 text-xs uppercase animate-pulse'>Načítám...</div>";
-            try {
-                const res = await fetch(`${SERVER_URL}/latest`, { headers: { "X-Master-Key": MASTER_KEY } });
-                const data = await res.json();
-                let p = data.record.players || [];
-                if (currentLdbTab === 'rebirths') p.sort((a,b) => b.rebirths - a.rebirths);
-                else if (currentLdbTab === 'money') p.sort((a,b) => b.money - a.money);
-                container.innerHTML = p.slice(0, 30).map((p, i) => `
-                    <div class="flex justify-between items-center p-3 ${p.name === localStorage.getItem('honza3D_name') ? 'bg-orange-500/20' : 'bg-white/5'} rounded-xl">
-                        <span class="font-black text-orange-500">${i+1}.</span>
-                        <span class="text-sm font-bold flex-grow px-3">${p.name}</span>
-                        <div class="text-right"><div class="font-black text-orange-400 text-xs">${p.rebirths} RB</div></div>
-                    </div>`).join('');
-            } catch(e) { container.innerHTML = "Chyba žebříčku"; }
+        function setTab(t) {
+            currentTab = t;
+            document.querySelectorAll('#ldb-modal button').forEach(b => b.classList.remove('tab-active'));
+            document.getElementById('tab-' + t).classList.add('tab-active');
+            updateLdb();
         }
 
-        function saveGame() {
-            const data = { money, multiplier, rebirthPrice, counts: upgrades.map(u => u.count), reachedMilestones: Array.from(reachedMilestones) };
-            localStorage.setItem('honza3D_save_dopamine', JSON.stringify(data));
+        function changeName() {
+            const n = prompt("Tvé jméno (3-12 znaků):");
+            if(n && n.length >= 3 && n.length <= 12) { localStorage.setItem('honza_name', n); updateUI(); sync(); }
         }
 
-        function loadGame() {
-            const saved = localStorage.getItem('honza3D_save_dopamine');
-            if (saved) {
-                const d = JSON.parse(saved);
-                money = d.money || 0; multiplier = d.multiplier || 1.0;
-                rebirthPrice = d.rebirthPrice || 100000000000;
-                reachedMilestones = new Set(d.reachedMilestones || []);
-                if(d.counts) d.counts.forEach((c, i) => {
-                    if(upgrades[i]) {
-                        upgrades[i].count = c;
-                        if (upgrades[i].type === 'auto') incomePerSecond += c * upgrades[i].value;
-                        else clickPower += c * upgrades[i].value;
-                    }
+        function toggleFS() {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        }
+
+        function save() {
+            const d = { m: money, mu: multi, rp: rbPrice, c: upgrades.map(u => u.count), cs: upgrades.map(u => u.cost) };
+            localStorage.setItem('honza_v_final', JSON.stringify(d));
+        }
+        function load() {
+            const s = localStorage.getItem('honza_v_final');
+            if(s) {
+                const d = JSON.parse(s); money=d.m; multi=d.mu; rbPrice=d.rp;
+                d.c.forEach((c, i) => { 
+                    upgrades[i].count = c; upgrades[i].cost = d.cs[i];
+                    if(upgrades[i].type==='auto') gps += c * upgrades[i].val; else gpc += c * upgrades[i].val;
                 });
             }
-            renderList(); updateUI(); updateDopamineUI();
+            renderUpgrades(); updateUI();
         }
 
-        setInterval(() => { if (incomePerSecond > 0) { money += (incomePerSecond * multiplier) / 10; updateUI(); updateDopamineUI(); } }, 100);
-        setInterval(syncWithServer, 60000);
-        loadGame();
+        setInterval(() => { if(gps>0){ money+=(gps*multi)/10; updateUI(); } }, 100);
+        setInterval(() => { if(Date.now()-lastClick > 1500) { combo=0; checkDopamine(); } }, 500);
+        setInterval(sync, 60000);
+        load();
     </script>
 </body>
 </html>
