@@ -57,11 +57,23 @@
 <body class="text-slate-200 select-none">
 
     <div id="leaderboard-modal" class="modal items-center justify-center p-4">
-        <div class="bg-slate-900 border border-orange-500/30 w-full max-w-md rounded-2xl p-6 relative">
+        <div class="bg-slate-900 border border-orange-500/30 w-full max-w-md rounded-2xl p-6 relative flex flex-col">
             <button onclick="closeLeaderboard()" class="absolute top-4 right-4 text-slate-500 text-2xl">✕</button>
             <h2 class="text-xl font-black text-orange-500 text-center uppercase mb-4 tracking-widest italic">SÍŤOVÝ ŽEBŘÍČEK</h2>
-            <div id="leaderboard-content" class="space-y-2 max-h-[50vh] overflow-y-auto pr-2"></div>
-            <div id="sync-status" class="text-[10px] text-center mt-4 text-slate-500 uppercase tracking-widest">Status: Připraven</div>
+            
+            <div id="leaderboard-content" class="space-y-2 max-h-[50vh] overflow-y-auto pr-2 mb-4"></div>
+            
+            <div class="border-t border-white/10 pt-4 mt-auto">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="text-[10px] text-slate-500 uppercase font-bold">Tvoje identita</div>
+                    <div id="current-name-display" class="font-bold text-orange-400">---</div>
+                    <button onclick="changeNamePrompt()" class="bg-white/5 hover:bg-white/10 px-4 py-2 rounded-lg text-[10px] uppercase font-bold transition-all border border-white/10">
+                        Změnit jméno ✏️
+                    </button>
+                </div>
+            </div>
+
+            <div id="sync-status" class="text-[9px] text-center mt-4 text-slate-600 uppercase tracking-widest">Status: Připraven</div>
         </div>
     </div>
 
@@ -148,10 +160,7 @@
 
         async function syncWithServer() {
             const pName = localStorage.getItem('honza3D_name');
-            if (!pName || pName.trim() === "" || pName.toLowerCase().startsWith("hráč")) {
-                console.warn("Sync: Neplatné jméno.");
-                return;
-            }
+            if (!pName || pName.trim() === "" || pName.toLowerCase().startsWith("hráč")) return;
 
             const status = document.getElementById('sync-status');
             if(status) status.innerText = "📡 SYNC...";
@@ -167,6 +176,14 @@
                 else if (Array.isArray(responseData.record)) players = responseData.record;
 
                 const rbCount = Math.round(multiplier - 1);
+                
+                // Odstranění starého jména, pokud se změnilo, aby se v tabulce neopakoval
+                const oldName = localStorage.getItem('honza3D_oldName');
+                if (oldName && oldName !== pName) {
+                    players = players.filter(p => p.name !== oldName);
+                    localStorage.removeItem('honza3D_oldName');
+                }
+
                 const playerIndex = players.findIndex(p => p.name === pName);
                 
                 if (playerIndex > -1) {
@@ -192,6 +209,11 @@
 
         async function updateLeaderboardUI() {
             const container = document.getElementById('leaderboard-content');
+            const currentNameDisplay = document.getElementById('current-name-display');
+            
+            const pName = localStorage.getItem('honza3D_name') || "Nepojmenován";
+            currentNameDisplay.innerText = pName;
+
             container.innerHTML = "<div class='text-center animate-pulse py-4 text-slate-500 uppercase text-xs'>Stahuji data z cloudu...</div>";
             try {
                 const res = await fetch(`${SERVER_URL}/latest?nocache=${Date.now()}`, {
@@ -209,15 +231,29 @@
                     .sort((a,b) => b.rebirths - a.rebirths)
                     .slice(0, 15)
                     .map((p, i) => `
-                        <div class="flex justify-between items-center p-3 ${i < 3 ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-white/5'} rounded-xl">
+                        <div class="flex justify-between items-center p-3 ${p.name === pName ? 'bg-orange-500/20 border border-orange-500' : (i < 3 ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-white/5')} rounded-xl transition-all">
                             <div class="flex items-center gap-3">
                                 <span class="font-black ${i < 3 ? 'text-orange-500' : 'text-slate-600'} w-4">${i+1}.</span>
-                                <span class="font-bold text-sm tracking-wide">${p.name}</span>
+                                <span class="font-bold text-sm tracking-wide">${p.name} ${p.name === pName ? '<span class="text-[10px] text-orange-400 font-normal ml-1">(TY)</span>' : ''}</span>
                             </div>
                             <b class="text-orange-500 font-money text-xs">${p.rebirths} RB</b>
                         </div>`
                     ).join('');
             } catch(e) { container.innerHTML = "<div class='text-red-500 text-center'>Chyba spojení</div>"; }
+        }
+
+        function changeNamePrompt() {
+            const oldName = localStorage.getItem('honza3D_name');
+            const newName = prompt("Zadej své nové jméno (3-15 znaků):", oldName);
+            
+            if (newName && newName.length >= 3 && newName.length <= 15 && !newName.toLowerCase().startsWith("hráč")) {
+                localStorage.setItem('honza3D_oldName', oldName);
+                localStorage.setItem('honza3D_name', newName);
+                updateUI();
+                syncWithServer().then(() => updateLeaderboardUI());
+            } else {
+                alert("Neplatné jméno! Musí mít 3-15 znaků a nesmí začínat na 'Hráč'.");
+            }
         }
 
         function handlePrint(e) { 
@@ -259,7 +295,7 @@
         function updateUI() {
             let pName = localStorage.getItem('honza3D_name');
             if (!pName || pName.toLowerCase().startsWith("hráč")) { 
-                pName = prompt("Zadej své jméno pro žebříček (nesmí začínat na 'Hráč'):") || "User" + Math.floor(Math.random()*1000); 
+                pName = prompt("Vítej! Zadej své unikátní jméno pro žebříček:") || "User" + Math.floor(Math.random()*1000); 
                 localStorage.setItem('honza3D_name', pName); 
             }
             document.getElementById('player-display').innerText = pName;
