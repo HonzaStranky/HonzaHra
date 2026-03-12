@@ -12,7 +12,6 @@
             font-family: 'Rajdhani', sans-serif; 
             overflow: hidden;
             height: 100vh;
-            /* touch-action: none smazáno, aby fungoval scroll */
         }
         h1, .font-money { font-family: 'Orbitron', sans-serif; }
         
@@ -20,7 +19,7 @@
             height: calc(100vh - 460px);
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            touch-action: pan-y; /* Povolí pouze vertikální scroll */
+            touch-action: pan-y;
         }
         
         @media (max-width: 768px) {
@@ -50,7 +49,6 @@
 
         .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95); z-index: 1000; backdrop-filter: blur(5px); }
         
-        /* Custom Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 10px; }
@@ -61,9 +59,9 @@
     <div id="leaderboard-modal" class="modal items-center justify-center p-4">
         <div class="bg-slate-900 border border-orange-500/30 w-full max-w-md rounded-2xl p-6 relative">
             <button onclick="closeLeaderboard()" class="absolute top-4 right-4 text-slate-500 text-2xl">✕</button>
-            <h2 class="text-xl font-black text-orange-500 text-center uppercase mb-4 tracking-widest">SÍŤOVÝ ŽEBŘÍČEK</h2>
+            <h2 class="text-xl font-black text-orange-500 text-center uppercase mb-4 tracking-widest italic">SÍŤOVÝ ŽEBŘÍČEK</h2>
             <div id="leaderboard-content" class="space-y-2 max-h-[50vh] overflow-y-auto pr-2"></div>
-            <div id="sync-status" class="text-[10px] text-center mt-4 text-slate-500 uppercase">Status: Připraven</div>
+            <div id="sync-status" class="text-[10px] text-center mt-4 text-slate-500 uppercase tracking-widest">Status: Připraven</div>
         </div>
     </div>
 
@@ -99,7 +97,7 @@
             
             <div id="upgrade-list" class="upgrade-container p-4"></div>
             
-            <div class="p-4 bg-slate-900 border-t border-white/10 mt-auto shadow-[0_-10px_20px_rgba(0,0,0,0.5)]">
+            <div class="p-4 bg-slate-900 border-t border-white/10 mt-auto">
                 <div class="bg-black/40 p-3 rounded-lg border border-white/5 mb-3">
                     <div class="flex justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
                         <span>Progress k Rebirthu</span>
@@ -118,9 +116,8 @@
     </div>
 
     <script>
-        // --- KONFIGURACE JSONBIN.IO ---
-        const BIN_ID = "69b2c797b7ec241ddc61e402"; // Vlož své Bin ID
-        const MASTER_KEY = "$2a$10$p9H9.IwZd4RwszyzR8Ojke.IrWVwKXcn6cXbF141uUazU.Lr1ZViW"; // Vlož svůj Master Key
+        const BIN_ID = "69b2c797b7ec241ddc61e402";
+        const MASTER_KEY = "$2a$10$p9H9.IwZd4RwszyzR8Ojke.IrWVwKXcn6cXbF141uUazU.Lr1ZViW";
         const SERVER_URL = `https://api.jsonbin.io/v3/b/${BIN_ID}`;
 
         let money = 0, multiplier = 1.0, rebirthPrice = 100000000000, clickPower = 1, incomePerSecond = 0;
@@ -149,69 +146,73 @@
             return (num / Math.pow(1000, exp)).toLocaleString('cs-CZ', {maximumFractionDigits: 1}) + " " + (suffixes[exp] || "e"+exp*3);
         }
 
-        // --- PROFI SYNC LOGIKA ---
         async function syncWithServer() {
             const pName = localStorage.getItem('honza3D_name');
-            if (!pName || pName.includes("Hráč")) return;
+            if (!pName || pName.trim() === "" || pName.toLowerCase().startsWith("hráč")) {
+                console.warn("Sync: Neplatné jméno.");
+                return;
+            }
 
             const status = document.getElementById('sync-status');
-            status.innerText = "Synchronizuji...";
+            if(status) status.innerText = "📡 SYNC...";
 
             try {
-                // 1. Získej aktuální data
-                const getRes = await fetch(SERVER_URL, {
+                const getRes = await fetch(`${SERVER_URL}/latest?nocache=${Date.now()}`, {
                     headers: { "X-Master-Key": MASTER_KEY }
                 });
                 const responseData = await getRes.json();
-                let players = responseData.record.players || [];
+                
+                let players = [];
+                if (responseData.record && responseData.record.players) players = responseData.record.players;
+                else if (Array.isArray(responseData.record)) players = responseData.record;
 
-                // 2. Aktualizuj svá data v poli
                 const rbCount = Math.round(multiplier - 1);
                 const playerIndex = players.findIndex(p => p.name === pName);
                 
                 if (playerIndex > -1) {
-                    if (players[playerIndex].rebirths < rbCount) {
-                        players[playerIndex].rebirths = rbCount;
-                    }
+                    if (players[playerIndex].rebirths < rbCount) players[playerIndex].rebirths = rbCount;
                 } else {
                     players.push({ name: pName, rebirths: rbCount });
                 }
 
-                // 3. Pošli zpět (PUT přepíše celý record)
+                players.sort((a, b) => b.rebirths - a.rebirths);
+                const finalData = { players: players.slice(0, 50) };
+
                 await fetch(SERVER_URL, {
                     method: 'PUT',
-                    headers: {
-                        "Content-Type": "application/json",
-                        "X-Master-Key": MASTER_KEY
-                    },
-                    body: JSON.stringify({ players: players })
+                    headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
+                    body: JSON.stringify(finalData)
                 });
 
-                status.innerText = "Data uložena";
+                if(status) status.innerText = "✅ ONLINE";
             } catch (e) {
-                console.error(e);
-                status.innerText = "Chyba syncu";
+                if(status) status.innerText = "❌ OFFLINE";
             }
         }
 
         async function updateLeaderboardUI() {
             const container = document.getElementById('leaderboard-content');
-            container.innerHTML = "<div class='text-center animate-pulse'>Načítám cloudová data...</div>";
+            container.innerHTML = "<div class='text-center animate-pulse py-4 text-slate-500 uppercase text-xs'>Stahuji data z cloudu...</div>";
             try {
-                const res = await fetch(SERVER_URL + "/latest", {
+                const res = await fetch(`${SERVER_URL}/latest?nocache=${Date.now()}`, {
                     headers: { "X-Master-Key": MASTER_KEY }
                 });
                 const data = await res.json();
                 const players = data.record.players || [];
                 
+                if (players.length === 0) {
+                    container.innerHTML = "<div class='text-center py-4 text-slate-500'>Žebříček je zatím prázdný.</div>";
+                    return;
+                }
+
                 container.innerHTML = players
                     .sort((a,b) => b.rebirths - a.rebirths)
                     .slice(0, 15)
                     .map((p, i) => `
-                        <div class="flex justify-between items-center p-3 ${i < 3 ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-white/5'} rounded-xl transition-all">
+                        <div class="flex justify-between items-center p-3 ${i < 3 ? 'bg-orange-500/10 border border-orange-500/20' : 'bg-white/5'} rounded-xl">
                             <div class="flex items-center gap-3">
-                                <span class="font-black text-orange-600 w-4">${i+1}.</span>
-                                <span class="font-bold text-sm">${p.name}</span>
+                                <span class="font-black ${i < 3 ? 'text-orange-500' : 'text-slate-600'} w-4">${i+1}.</span>
+                                <span class="font-bold text-sm tracking-wide">${p.name}</span>
                             </div>
                             <b class="text-orange-500 font-money text-xs">${p.rebirths} RB</b>
                         </div>`
@@ -219,7 +220,6 @@
             } catch(e) { container.innerHTML = "<div class='text-red-500 text-center'>Chyba spojení</div>"; }
         }
 
-        // --- OVLÁDÁNÍ HRY ---
         function handlePrint(e) { 
             money += clickPower * multiplier; 
             updateUI(); 
@@ -234,6 +234,7 @@
         function openLeaderboard() { 
             document.getElementById('leaderboard-modal').style.display = 'flex'; 
             updateLeaderboardUI(); 
+            syncWithServer();
         }
 
         function closeLeaderboard() { 
@@ -257,8 +258,8 @@
 
         function updateUI() {
             let pName = localStorage.getItem('honza3D_name');
-            if (!pName) { 
-                pName = prompt("Zadej své jméno pro globální síť:") || "Hráč" + Math.floor(Math.random()*1000); 
+            if (!pName || pName.toLowerCase().startsWith("hráč")) { 
+                pName = prompt("Zadej své jméno pro žebříček (nesmí začínat na 'Hráč'):") || "User" + Math.floor(Math.random()*1000); 
                 localStorage.setItem('honza3D_name', pName); 
             }
             document.getElementById('player-display').innerText = pName;
@@ -273,13 +274,8 @@
             document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
             
             const btn = document.getElementById('rebirth-btn');
-            if (money >= rebirthPrice) {
-                btn.classList.add('rebirth-ready');
-                btn.style.opacity = "1";
-            } else {
-                btn.classList.remove('rebirth-ready');
-                btn.style.opacity = "0.5";
-            }
+            if (money >= rebirthPrice) btn.classList.add('rebirth-ready');
+            else btn.classList.remove('rebirth-ready');
             
             upgrades.forEach((u, i) => {
                 const card = document.getElementById(`upg-${i}`);
@@ -293,7 +289,7 @@
                     <div class="flex gap-3 items-center">
                         <span class="text-2xl">${u.icon}</span>
                         <div>
-                            <div class="font-bold text-[11px] uppercase">${u.name}</div>
+                            <div class="font-bold text-[11px] uppercase tracking-tight">${u.name}</div>
                             <div class="text-[9px] opacity-60">+${formatMoney(u.value)}</div>
                         </div>
                     </div>
@@ -336,7 +332,6 @@
             renderList(); updateUI();
         }
 
-        // Smyčka hry
         setInterval(() => { 
             if (incomePerSecond > 0) { 
                 money += (incomePerSecond * multiplier) / 10; 
@@ -344,9 +339,7 @@
             } 
         }, 100);
 
-        // Auto-save do cloudu každé 2 minuty
-        setInterval(syncWithServer, 120000);
-        
+        setInterval(syncWithServer, 60000);
         loadGame();
     </script>
 </body>
