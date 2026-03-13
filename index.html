@@ -202,28 +202,85 @@
         }
 
         // --- CLOUD SYNC & LEADERBOARD ---
-        async function syncWithServer() {
-            const pName = localStorage.getItem('honza3D_name');
-            if (!pName || pName.toLowerCase().startsWith("hráč")) return;
-            try {
-                const getRes = await fetch(`${SERVER_URL}/latest`, { headers: { "X-Master-Key": MASTER_KEY } });
-                const responseData = await getRes.json();
-                let players = responseData.record.players || [];
-                const rbCount = Math.round(multiplier - 1);
-                
-                const idx = players.findIndex(p => p.name === pName);
-                const myData = { name: pName, rebirths: rbCount, money: Math.floor(money), platform: platform, lastSeen: Date.now() };
-                
-                if (idx > -1) players[idx] = myData; else players.push(myData);
+async function syncWithServer() {
+    const pName = localStorage.getItem('honza3D_name');
+    
+    // Ochrana: Pokud jméno chybí nebo je to výchozí "Hráč", nesynchronizujeme
+    if (!pName || pName.toLowerCase().startsWith("hráč")) return;
 
-                await fetch(SERVER_URL, {
-                    method: 'PUT',
-                    headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
-                    body: JSON.stringify({ players: players.slice(0, 100) })
-                });
-                if(document.getElementById('sync-status')) document.getElementById('sync-status').innerText = "✅ CLOUD SYNCHRONIZOVÁN";
-            } catch (e) { }
+    try {
+        // 1. Získání aktuálních dat ze serveru
+        const getRes = await fetch(`${SERVER_URL}/latest`, { 
+            headers: { "X-Master-Key": MASTER_KEY } 
+        });
+        const responseData = await getRes.json();
+        
+        // Zajistíme, že players je pole
+        let players = responseData.record.players || [];
+
+        // 2. Příprava tvých aktuálních dat
+        const rbCount = Math.max(0, Math.round((multiplier - 1) * 5)); // Výpočet rebirthů (pokud máš +0.2 za jeden)
+        const myData = { 
+            name: pName, 
+            rebirths: rbCount, 
+            money: Math.floor(money), 
+            platform: typeof platform !== 'undefined' ? platform : "Web", 
+            lastSeen: Date.now() 
+        };
+
+        // 3. OŠETŘENÍ DUPLICIT (Klíčová část)
+        // Najdeme, jestli už hráč v seznamu je (hledáme podle jména bez ohledu na velká/malá písmena)
+        const idx = players.findIndex(p => p.name.toLowerCase() === pName.toLowerCase());
+
+        if (idx > -1) {
+            // Pokud hráč existuje, aktualizujeme jeho data pouze pokud má lepší skóre
+            // (Nebo je přepíšeme vždy, aby se aktualizoval lastSeen a peníze)
+            players[idx] = myData;
+        } else {
+            // Pokud tam hráč není, přidáme ho
+            players.push(myData);
         }
+
+        // 4. ÚKLID SEZNAMU
+        // Seřadíme hráče (primárně podle rebirthů, sekundárně podle peněz)
+        players.sort((a, b) => {
+            if (b.rebirths !== a.rebirths) return b.rebirths - a.rebirths;
+            return b.money - a.money;
+        });
+
+        // Ořízneme seznam na top 100, aby se bin nepřeplnil
+        const cleanPlayers = players.slice(0, 100);
+
+        // 5. Odeslání vyčištěných dat zpět na server
+        await fetch(SERVER_URL, {
+            method: 'PUT',
+            headers: { 
+                "Content-Type": "application/json", 
+                "X-Master-Key": MASTER_KEY 
+            },
+            body: JSON.stringify({ players: cleanPlayers })
+        });
+
+        // 6. Aktualizace stavu v UI
+        const syncStatus = document.getElementById('sync-status');
+        if (syncStatus) {
+            syncStatus.innerText = "✅ CLOUD SYNCHRONIZOVÁN";
+            syncStatus.classList.remove('text-red-500');
+            syncStatus.classList.add('text-green-500');
+            
+            // Po 3 sekundách text zmizí nebo se změní
+            setTimeout(() => { syncStatus.innerText = ""; }, 3000);
+        }
+
+    } catch (e) {
+        console.error("Chyba při synchronizaci:", e);
+        const syncStatus = document.getElementById('sync-status');
+        if (syncStatus) {
+            syncStatus.innerText = "❌ CHYBA SYNCHRONIZACE";
+            syncStatus.classList.add('text-red-500');
+        }
+    }
+}
 
         async function changeNamePrompt() {
             const oldName = localStorage.getItem('honza3D_name');
@@ -449,3 +506,4 @@
     </script>
 </body>
 </html>
+
