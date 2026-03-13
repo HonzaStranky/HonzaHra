@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Honza3D | Ultimate Empire Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@500;700&display=swap" rel="stylesheet">
     <style>
@@ -21,7 +22,33 @@
             100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
         }
         .printer-ripple { animation: ripple 0.3s ease-out; }
+        /* Toto zajistí, že se ti na mobilu nebude označovat text při držení tlačítka */
+        * {
+            -webkit-tap-highlight-color: transparent;
+            -webkit-touch-callout: none;
+            -webkit-user-select: none;
+            user-select: none;
+        }
 
+        /* Ale pro vstupy (pokud nějaké máš, např. jméno) to chceme nechat */
+        input, textarea {
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        /* Oprava pozice modálního okna pro mobil */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 9999; /* Musí být nejvýše */
+            display: none;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.9);
+        }
         /* Fix pro scrollování upgradů */
         .upgrade-container {
             height: calc(100vh - 460px);
@@ -578,8 +605,13 @@ let isSpinning = false;
 let moneyMultiplierActive = false;
 
 function openWheel() {
-    document.getElementById('wheel-modal').style.display = 'flex';
-    checkWheelTimer();
+    const modal = document.getElementById('wheel-modal');
+    if (modal) {
+        modal.style.setProperty('display', 'flex', 'important');
+        checkWheelTimer();
+    } else {
+        console.error("Modální okno 'wheel-modal' nebylo nalezeno!");
+    }
 }
 
 function closeWheel() {
