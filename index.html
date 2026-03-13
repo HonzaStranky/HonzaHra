@@ -30,6 +30,23 @@
             user-select: none;
         }
 
+        @media (max-width: 480px) {
+            .upgrade-card {
+                padding: 10px !important;
+                flex-direction: row; /* Drží ikonu vlevo a zbytek vpravo */
+                align-items: center;
+            }
+            
+            .buy-max-btn {
+                min-width: 50px; /* Větší plocha pro prst na mobilu */
+                min-height: 30px;
+                background: rgba(255, 255, 255, 0.15) !important; /* Více viditelné */
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+        }
+
         /* Ale pro vstupy (pokud nějaké máš, např. jméno) to chceme nechat */
         input, textarea {
             -webkit-user-select: text;
@@ -574,31 +591,36 @@ async function syncWithServer() {
 
         
         function renderList() {
-            document.getElementById('upgrade-list').innerHTML = upgrades.map((u, i) => `
+            const list = document.getElementById('upgrade-list');
+            if (!list) return;
+
+            list.innerHTML = upgrades.map((u, i) => `
                 <div 
                     id="upg-${i}" 
-                    class="upgrade-card ${u.type === 'click' ? 'upgrade-click' : 'upgrade-auto'} p-3 rounded-xl flex justify-between items-center cursor-pointer select-none mb-2"
+                    class="upgrade-card ${u.type === 'click' ? 'upgrade-click' : 'upgrade-auto'} p-3 rounded-xl flex justify-between items-center cursor-pointer select-none mb-2 transition-all active:scale-95"
                     onmousedown="startTurbo(${i})" 
                     onmouseup="stopTurbo()" 
                     onmouseleave="stopTurbo()"
                     ontouchstart="startTurbo(${i})" 
                     ontouchend="stopTurbo()"
                 >
-                    <div class="flex gap-3 items-center">
+                    <div class="flex gap-3 items-center pointer-events-none">
                         <span class="text-2xl">${u.icon}</span>
                         <div>
-                            <div class="font-bold text-[11px] uppercase">${u.name}</div>
-                            <div class="text-[9px] opacity-60">+${formatMoney(u.value)} ${u.type === 'click' ? '/klik' : '/s'}</div>
+                            <div class="font-bold text-[11px] uppercase leading-none mb-1">${u.name}</div>
+                            <div class="text-[9px] opacity-70 font-black text-white/80">+${formatMoney(u.value)} ${u.type === 'click' ? '/klik' : '/s'}</div>
                         </div>
                     </div>
                     
-                    <div class="flex flex-col items-end gap-1">
-                        <div class="font-black text-[11px] text-orange-400 font-money">${formatMoney(u.cost)}</div>
+                    <div class="flex flex-col items-end gap-2">
+                        <div class="font-black text-[11px] text-orange-400 font-money whitespace-nowrap">${formatMoney(u.cost)}</div>
+                        
                         <button 
                             onclick="event.stopPropagation(); buyMax(${i})" 
-                            class="bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded text-[8px] font-bold uppercase border border-white/5"
+                            ontouchstart="event.stopPropagation();" 
+                            class="buy-max-btn bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter"
                         >
-                            Max
+                            MAX
                         </button>
                     </div>
                 </div>`).join('');
