@@ -15,6 +15,13 @@
         }
         h1, .font-money { font-family: 'Orbitron', sans-serif; }
         
+        @keyframes ripple {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.4); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 20px rgba(249, 115, 22, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(249, 115, 22, 0); }
+        }
+        .printer-ripple { animation: ripple 0.3s ease-out; }
+
         /* Fix pro scrollování upgradů */
         .upgrade-container {
             height: calc(100vh - 460px);
@@ -26,7 +33,6 @@
         @media (max-width: 768px) {
             .upgrade-container { height: calc(100vh - 530px); }
         }
-
         /* Design tiskárny */
         .printer-btn { 
             background: rgba(30, 41, 59, 0.7); 
@@ -87,8 +93,27 @@
         }
     </style>
 </head>
-<body class="text-slate-200 select-none">
 
+<body class="text-slate-200 select-none">
+<div id="wheel-modal" class="modal items-center justify-center p-4">
+    <div class="bg-slate-900 border-2 border-purple-500 rounded-3xl p-8 max-w-sm w-full text-center relative shadow-[0_0_50px_rgba(168,85,247,0.4)]">
+        <button onclick="closeWheel()" class="absolute top-4 right-4 text-slate-500 hover:text-white">✕</button>
+        <h2 class="text-3xl font-black text-purple-400 mb-2 uppercase tracking-tighter italic font-money">Kolo Štěstí</h2>
+        <p class="text-[10px] text-slate-400 mb-6 uppercase tracking-widest">Dostupné jednou za 12 hodin</p>
+        
+        <div id="wheel-container" class="relative w-48 h-48 mx-auto mb-8 border-4 border-purple-500/30 rounded-full flex items-center justify-center bg-black/40 shadow-inner">
+            <div id="wheel-arrow" class="absolute -top-2 left-1/2 -translate-x-1/2 text-2xl z-10">▼</div>
+            <div id="wheel-display" class="text-5xl transition-all duration-[4000s] ease-out">*</div>
+        </div>
+
+        <button id="spin-btn" onclick="spinWheel()" class="w-full bg-purple-600 hover:bg-purple-500 py-4 rounded-xl font-black uppercase text-sm shadow-lg shadow-purple-900/40 transition-all">
+            Zatočit zdarma!
+        </button>
+        <div id="wheel-timer" class="hidden mt-4 text-purple-400 font-bold text-sm"></div>
+    </div>
+</div>
+
+<button onclick="openWheel()" class="absolute top-16 right-4 bg-purple-600/80 px-4 py-2 rounded-full font-black text-[10px] uppercase border border-purple-400/30">🎡 KOLO ŠTĚSTÍ</button>
     <div id="leaderboard-modal" class="modal items-center justify-center p-4">
         <div class="bg-slate-900 border border-orange-500/30 w-full max-w-md rounded-2xl p-6 relative flex flex-col max-h-[90vh]">
             <button onclick="closeLeaderboard()" class="absolute top-4 right-4 text-slate-500 text-2xl hover:text-white transition-colors">✕</button>
@@ -219,7 +244,7 @@ async function syncWithServer() {
         let players = responseData.record.players || [];
 
         // 2. Příprava tvých aktuálních dat
-        const rbCount = Math.max(0, Math.round((multiplier - 1) * 5)); // Výpočet rebirthů (pokud máš +0.2 za jeden)
+        const rbCount = Math.max(0, Math.round((multiplier - 1))); // Výpočet rebirthů (pokud máš +0.2 za jeden)
         const myData = { 
             name: pName, 
             rebirths: rbCount, 
@@ -228,19 +253,49 @@ async function syncWithServer() {
             lastSeen: Date.now() 
         };
 
-        // 3. OŠETŘENÍ DUPLICIT (Klíčová část)
-        // Najdeme, jestli už hráč v seznamu je (hledáme podle jména bez ohledu na velká/malá písmena)
-        const idx = players.findIndex(p => p.name.toLowerCase() === pName.toLowerCase());
+        async function changeName() {
+            const oldName = localStorage.getItem('honza3D_name');
+            const newName = prompt("Zadej své nové jméno:", oldName || "");
+        
+            // Pokud hrac dal Cancel nebo nic nenapsal, nic nemeň
+            if (newName === null || newName.trim() === "" || newName === oldName) return;
+        
+            // 1. OKAMŽITÉ SMAZÁNÍ STARÉHO JMÉNA ZE SERVERU
+            if (oldName && !oldName.toLowerCase().startsWith("hráč")) {
+                try {
+                    // Nejdříve stáhneme aktuální seznam
+                    const getRes = await fetch(`${SERVER_URL}/latest`, { headers: { "X-Master-Key": MASTER_KEY } });
+                    const responseData = await getRes.json();
+                    let players = responseData.record.players || [];
+        
+                    // Vyfiltrujeme pryč staré jméno (smažeme ho ze seznamu)
+                    players = players.filter(p => p.name.toLowerCase() !== oldName.toLowerCase());
+        
+                    // Nahrajeme čistý seznam zpět na server (bez starého jména)
+                    await fetch(SERVER_URL, {
+                        method: 'PUT',
+                        headers: { "Content-Type": "application/json", "X-Master-Key": MASTER_KEY },
+                        body: JSON.stringify({ players: players })
+                    });
+                    
+                    console.log("Staré jméno smazáno z cloudu.");
+                } catch (e) {
+                    console.error("Nepodařilo se smazat staré jméno:", e);
+                    alert("Chyba spojení se serverem. Zkus to za chvíli.");
+                    return; // Pokud se smazání nepovedlo, nepokračujeme, aby nevznikla duplicita
+                }
+            }
 
-        if (idx > -1) {
-            // Pokud hráč existuje, aktualizujeme jeho data pouze pokud má lepší skóre
-            // (Nebo je přepíšeme vždy, aby se aktualizoval lastSeen a peníze)
-            players[idx] = myData;
-        } else {
-            // Pokud tam hráč není, přidáme ho
-            players.push(myData);
-        }
-
+                // 2. NASTAVENÍ NOVÉHO JMÉNA
+                localStorage.setItem('honza3D_name', newName.trim());
+                
+                // 3. OKAMŽITÁ SYNCHRONIZACE NOVÉHO JMÉNA
+                // Tím se nové jméno hned zapíše do cloudu s aktuálními penězi
+                await syncWithServer();
+                
+                alert("Jméno změněno na: " + newName);
+                if(typeof renderLeaderboard === "function") renderLeaderboard(); // Aktualizuj tabulku, pokud tu funkci máš
+            }
         // 4. ÚKLID SEZNAMU
         // Seřadíme hráče (primárně podle rebirthů, sekundárně podle peněz)
         players.sort((a, b) => {
@@ -374,6 +429,13 @@ async function syncWithServer() {
         function handlePrint(e) { 
             money += clickPower * multiplier; 
             createMoneyParticle(e);
+            
+            // Animace tlačítka
+            const btn = document.getElementById('printer-main');
+            btn.classList.remove('printer-ripple');
+            void btn.offsetWidth; // Reset animace
+            btn.classList.add('printer-ripple');
+
             updateUI(); 
             saveGame(); 
         }
@@ -409,15 +471,17 @@ async function syncWithServer() {
         }
 
         function updateUI() {
-            let pName = localStorage.getItem('honza3D_name');
-            if (!pName || pName.toLowerCase().startsWith("hráč")) { 
-                pName = prompt("Zadej své jméno pro impérium:") || "Hráč" + Math.floor(Math.random()*100); 
-                localStorage.setItem('honza3D_name', pName); 
-            }
-            document.getElementById('player-display').innerText = pName + " [" + platform + "]";
+            // 1. Získání jména (bez promptu, ten měj jinde)
+            const pName = localStorage.getItem('honza3D_name') || "Hráč";
+            const display = document.getElementById('player-display');
+            if (display) display.innerText = pName + " [" + platform + "]";
+
+            // 2. Peníze a statistiky
             document.getElementById('money').innerText = formatMoney(money);
             document.getElementById('speed').innerText = formatMoney(incomePerSecond * multiplier) + "/s";
             document.getElementById('power').innerText = formatMoney(clickPower * multiplier) + "/klik";
+            
+            // 3. Rebirth sekce
             document.getElementById('rebirth-badge').innerText = multiplier.toFixed(1) + "x MULTIPLIER";
             document.getElementById('rebirth-price-tag').innerText = "Cena: " + formatMoney(rebirthPrice);
             
@@ -425,24 +489,41 @@ async function syncWithServer() {
             document.getElementById('progress-bar').style.width = prog + "%";
             document.getElementById('progress-percent').innerText = Math.floor(prog) + "%";
             
+            // 4. Stav Rebirth tlačítka
             const btn = document.getElementById('rebirth-btn');
             if (money >= rebirthPrice) {
                 btn.classList.add('rebirth-ready');
                 btn.style.opacity = "1";
+                btn.style.cursor = "pointer";
             } else {
                 btn.classList.remove('rebirth-ready');
                 btn.style.opacity = "0.5";
+                btn.style.cursor = "not-allowed";
             }
             
+            // 5. Průhlednost upgradů
             upgrades.forEach((u, i) => {
                 const card = document.getElementById(`upg-${i}`);
-                if (card) card.style.opacity = money >= u.cost ? "1" : "0.3";
+                if (card) {
+                    card.style.opacity = money >= u.cost ? "1" : "0.3";
+                    // Bonus: změníme barvu ceny na červenou, když na to nemá
+                    const priceTag = card.querySelector('.text-orange-400');
+                    if (priceTag) priceTag.style.color = money >= u.cost ? "#fb923c" : "#ef4444";
+                }
             });
         }
 
         function renderList() {
             document.getElementById('upgrade-list').innerHTML = upgrades.map((u, i) => `
-                <div onclick="buyUpgrade(${i})" id="upg-${i}" class="upgrade-card ${u.type === 'click' ? 'upgrade-click' : 'upgrade-auto'} p-3 rounded-xl flex justify-between items-center cursor-pointer active:scale-95 transition-all">
+                <div 
+                    onmousedown="startTurbo(${i})" 
+                    onmouseup="stopTurbo()" 
+                    onmouseleave="stopTurbo()"
+                    ontouchstart="startTurbo(${i})" 
+                    ontouchend="stopTurbo()"
+                    id="upg-${i}" 
+                    class="upgrade-card ${u.type === 'click' ? 'upgrade-click' : 'upgrade-auto'} p-3 rounded-xl flex justify-between items-center cursor-pointer active:scale-95 transition-all select-none">
+                    
                     <div class="flex gap-3 items-center">
                         <span class="text-2xl">${u.icon}</span>
                         <div>
@@ -466,6 +547,124 @@ async function syncWithServer() {
             }
         }
 
+let turboInterval = null;
+let turboDelayTimeout = null;
+
+function startTurbo(idx) {
+    // 1. Nejdřív koupíme jeden hned při kliknutí
+    buyUpgrade(idx);
+
+    // 2. Nastavíme prodlevu 2 sekundy, než začne "kulomet"
+    turboDelayTimeout = setTimeout(() => {
+        // 3. Po 2 sekundách spustíme interval každých 100ms (0.1s)
+        turboInterval = setInterval(() => {
+            const u = upgrades[idx];
+            if (money >= u.cost) {
+                buyUpgrade(idx);
+            } else {
+                stopTurbo(); // Pokud dojdou peníze, zastavíme to
+            }
+        }, 100);
+    }, 2000);
+}
+
+function stopTurbo() {
+    // Vyčistíme oba časovače, aby nákup nepokračoval
+    clearTimeout(turboDelayTimeout);
+    clearInterval(turboInterval);
+}
+
+let isSpinning = false;
+let moneyMultiplierActive = false;
+
+function openWheel() {
+    document.getElementById('wheel-modal').style.display = 'flex';
+    checkWheelTimer();
+}
+
+function closeWheel() {
+    if (!isSpinning) document.getElementById('wheel-modal').style.display = 'none';
+}
+
+function checkWheelTimer() {
+    const lastSpin = localStorage.getItem('honza3D_lastSpin') || 0;
+    const now = Date.now();
+    const waitTime = 12 * 60 * 60 * 1000; // 12 hodin v ms
+    const timeLeft = waitTime - (now - lastSpin);
+    const btn = document.getElementById('spin-btn');
+    const timerDisp = document.getElementById('wheel-timer');
+
+    if (timeLeft > 0) {
+        btn.style.display = 'none';
+        timerDisp.classList.remove('hidden');
+        const hours = Math.floor(timeLeft / (1000 * 60 * 60));
+        const mins = Math.floor((timeLeft % (1000 * 60 * 60)) / (1000 * 60));
+        timerDisp.innerText = `Další zatočení za: ${hours}h ${mins}m`;
+    } else {
+        btn.style.display = 'block';
+        timerDisp.classList.add('hidden');
+    }
+}
+
+async function spinWheel() {
+    if (isSpinning) return;
+    isSpinning = true;
+    
+    const btn = document.getElementById('spin-btn');
+    const display = document.getElementById('wheel-display');
+    btn.style.opacity = "0.5";
+    btn.innerText = "Točím...";
+
+    // Efekt točení
+    display.style.transition = "all 4s cubic-bezier(0.15, 0, 0.15, 1)";
+    const randomDeg = 1800 + Math.random() * 1000;
+    display.style.transform = `rotate(${randomDeg}deg)`;
+
+    setTimeout(() => {
+        const rewards = [
+            { name: "2 Rebirthy", action: () => { multiplier += 2; } },
+            { name: "1 V peněz", action: () => { money += 1e30; } },
+            { name: "5x víc peněz", action: () => { money *= 5; } },
+            { name: "1 Rebirth", action: () => { multiplier += 1; } },
+            { name: "100x Money (10m)", action: () => { activate100xBoost(); } }
+        ];
+
+        const win = rewards[Math.floor(Math.random() * rewards.length)];
+        
+        // Uložení času
+        localStorage.setItem('honza3D_lastSpin', Date.now());
+        
+        // Provedení akce
+        win.action();
+        
+        alert("GRATULACE! Vyhrál jsi: " + win.name);
+        
+        isSpinning = false;
+        display.style.transform = "rotate(0deg)";
+        display.style.transition = "none";
+        
+        updateUI();
+        saveGame();
+        checkWheelTimer();
+        syncWithServer();
+    }, 4000);
+}
+
+function activate100xBoost() {
+    const originalMult = multiplier;
+    multiplier *= 100;
+    updateUI();
+    
+    // Vizuální efekt
+    document.body.style.boxShadow = "inset 0 0 100px rgba(249, 115, 22, 0.5)";
+    
+    setTimeout(() => {
+        multiplier /= 100;
+        document.body.style.boxShadow = "none";
+        updateUI();
+        alert("100x Boost vypršel!");
+    }, 10 * 60 * 1000); // 10 minut
+}
         function saveGame() { 
             const data = { money, multiplier, rebirthPrice, counts: upgrades.map(u => u.count) }; 
             localStorage.setItem('honza3D_save', JSON.stringify(data)); 
@@ -492,7 +691,16 @@ async function syncWithServer() {
             renderList(); updateUI();
         }
 
-        // --- SMYČKY ---
+// --- SMYČKY & START ---
+        
+        // 1. Kontrola jména PŘED startem (jen jednou)
+        let savedName = localStorage.getItem('honza3D_name');
+        if (!savedName || savedName.toLowerCase().startsWith("hráč")) {
+            savedName = prompt("Vítej v Honza3D! Jak se bude jmenovat tvé impérium?") || "Hráč" + Math.floor(Math.random()*1000);
+            localStorage.setItem('honza3D_name', savedName);
+        }
+
+        // 2. Hlavní smyčka pro automatický příjem (10x za sekundu)
         setInterval(() => { 
             if (incomePerSecond > 0) { 
                 money += (incomePerSecond * multiplier) / 10; 
@@ -500,10 +708,34 @@ async function syncWithServer() {
             } 
         }, 100);
 
-        setInterval(syncWithServer, 60000); // Každou minutu cloud sync
-        
+        // 3. Cloud sync každou minutu
+        setInterval(syncWithServer, 60000); 
+
+        // 4. Funkce pro vizuální efekt tiskárny (přidej do handlePrint)
+        function animatePrinter() {
+            const btn = document.getElementById('printer-main');
+            if (!btn) return;
+            
+            // Přidáme třídu pro animaci
+            btn.style.transform = "scale(0.95)";
+            btn.style.borderColor = "rgba(249, 115, 22, 0.8)";
+            
+            // Po 100ms vrátíme zpět
+            setTimeout(() => {
+                btn.style.transform = "scale(1)";
+                btn.style.borderColor = "rgba(249, 115, 22, 0.3)";
+            }, 100);
+        }
+
+        // Upravíme tvůj handlePrint, aby volal tu animaci
+        const originalHandlePrint = handlePrint;
+        handlePrint = function(e) {
+            animatePrinter();
+            originalHandlePrint(e);
+        };
+
+        // 5. NAČTENÍ HRY
         loadGame();
     </script>
 </body>
 </html>
-
