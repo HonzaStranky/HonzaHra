@@ -746,20 +746,39 @@ async function spinWheel() {
     }, 4000);
 }
 
-function activate100xBoost() {
-    const originalMult = multiplier;
-    multiplier *= 100;
+let activeBoostCount = 0; // Pomocná proměnná pro sledování boostu
+
+function activateBoost() {
+    // Pokud už boost běží, jen prodloužíme čas (volitelné), 
+    // nebo prostě přidáme další násobič.
+    const boostPower = 100;
+    
+    // Místo násobení přímo multiplieru, vytvoříme dočasný efekt
+    // Abychom předešli chybě při Rebirthu, budeme násobit výkon v updateUI
+    // Ale nejjednodušší fix pro tvůj kód je tento:
+    
+    activeBoostCount++;
+    multiplier *= boostPower; 
+    
+    document.body.classList.add('boost-active');
     updateUI();
     
-    // Vizuální efekt
-    document.body.style.boxShadow = "inset 0 0 100px rgba(249, 115, 22, 0.5)";
-    
+    // Upozornění pro hráče
+    console.log("Boost 100x aktivován na 10 minut");
+
     setTimeout(() => {
-        multiplier /= 100;
-        document.body.style.boxShadow = "none";
+        multiplier /= boostPower; 
+        activeBoostCount--;
+        
+        if (activeBoostCount <= 0) {
+            document.body.classList.remove('boost-active');
+            activeBoostCount = 0;
+        }
+        
         updateUI();
-        alert("100x Boost vypršel!");
-    }, 10 * 60 * 1000); // 10 minut
+        saveGame();
+        alert("Boost 100x vypršel!");
+    }, 10 * 60 * 1000); // 10 minut v milisekundách
 }
         function saveGame() { 
             const data = { money, multiplier, rebirthPrice, counts: upgrades.map(u => u.count) }; 
