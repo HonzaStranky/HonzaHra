@@ -746,6 +746,13 @@ async function spinWheel() {
     }, 4000);
 }
 
+// Pokud má někdo multiplier přes 1000, pravděpodobně se mu zasekl boost. 
+// Nastavíme mu ho na rozumnou hodnotu (třeba 1.0 nebo kolik jsi měl mít).
+if (multiplier > 1000) {
+    multiplier = 47.0; 
+    saveGame();
+}
+
 let activeBoostCount = 0; // Pomocná proměnná pro sledování boostu
 
 function activateBoost() {
