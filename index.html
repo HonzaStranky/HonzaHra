@@ -484,6 +484,21 @@ async function syncWithServer() {
             saveGame(); 
         }
         
+        function multipliertoohighreset() {
+            if (multiplier > 3000) {
+                multiplier = 50.0;
+                money = 0;
+                incomePerSecond = 0;
+                clickPower = 1;
+                rebirthPrice = 100000000000;
+                upgrades.forEach(u => u.count = 0);
+                renderList();
+                updateUI();
+                saveGame();
+                alert("Multiplier byl příliš vysoký a byl resetován pro stabilitu hry.");
+            }
+        }
+
         function buyMax(idx) {
             const u = upgrades[idx];
             let count = 0;
