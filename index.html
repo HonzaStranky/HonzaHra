@@ -614,14 +614,7 @@ async function syncWithServer() {
                     
                     <div class="flex flex-col items-end gap-2">
                         <div class="font-black text-[11px] text-orange-400 font-money whitespace-nowrap">${formatMoney(u.cost)}</div>
-                        
-                        <button 
-                            onclick="event.stopPropagation(); buyMax(${i})" 
-                            ontouchstart="event.stopPropagation();" 
-                            class="buy-max-btn bg-white/10 hover:bg-white/20 border border-white/20 px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter"
-                        >
-                            MAX
-                        </button>
+                    
                     </div>
                 </div>`).join('');
         }
@@ -855,7 +848,13 @@ function activateBoost() {
             animatePrinter();
             originalHandlePrint(e);
         };
+        // Automatická synchronizace s cloudem každou minutu
+        setInterval(syncWithServer, 60000);
 
+        window.addEventListener('beforeunload', () => {
+            syncWithServer(); // Pokus o poslední sync před odchodem
+        });
+        
         // 5. NAČTENÍ HRY
         loadGame();
     </script>
